@@ -1,0 +1,45 @@
+# Dependencias básicas
+Flask==2.3.3
+Werkzeug==2.3.7
+Jinja2==3.1.2
+itsdangerous==2.1.2
+click==8.1.7
+
+# Extensiones de Flask
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.0.5
+Flask-Login==0.6.3
+Flask-WTF==1.2.1
+Flask-Mail==0.9.1
+Flask-Moment==1.0.5
+Flask-Babel==4.0.0  # Versión actualizada
+Flask-Limiter==3.5.0
+Flask-SocketIO==5.3.6
+
+# Servidor y comunicación
+eventlet==0.33.3
+gunicorn==21.2.0
+
+# Base de datos
+SQLAlchemy==2.0.23
+psycopg2-binary==2.9.9  # Para PostgreSQL en producción
+alembic==1.12.1
+
+# Herramientas para validación
+email-validator==2.1.0
+WTForms==3.1.1
+python-dotenv==1.0.0
+
+# Generación de PDFs
+reportlab==4.0.7
+WeasyPrint==60.1
+
+# Seguridad
+bcrypt==4.0.1
+PyJWT==2.8.0
+
+# Utilidades
+pillow==10.1.0  # Para manipulación de imágenes
+pytz==2023.3.post1  # Para manejo de zonas horarias
+python-dateutil==2.8.2
+qrcode==7.4.2  # Para generar códigos QR

@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}Inicio - {{ app_name }}{% endblock %}
+
+{% block content %}
+<!-- Banner principal con información clave -->
+<div class="row mb-5">
+    <div class="col-md-12">
+        <div class="p-5 mb-4 bg-light rounded-3 text-center">
+            <div class="container-fluid py-5">
+                <h1 class="display-5 fw-bold">Atención médica a un clic de distancia</h1>
+                <p class="fs-4">Consulta con especialistas médicos sin salir de casa. <br>Fácil, seguro y rápido.</p>
+                <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-4">
+                    {% if current_user.is_authenticated and current_user.es_paciente %}
+                    <a href="{{ url_for('paciente.agendar_cita') }}" class="btn btn-primary btn-lg-custom">
+                        <i class="fas fa-calendar-plus icon-large d-block mb-2"></i>
+                        Agendar Cita
+                    </a>
+                    <a href="{{ url_for('paciente.mis_citas') }}" class="btn btn-success btn-lg-custom">
+                        <i class="fas fa-calendar-check icon-large d-block mb-2"></i>
+                        Mis Citas
+                    </a>
+                    {% elif current_user.is_authenticated and current_user.es_medico %}
+                    <a href="{{ url_for('medico.inicio') }}" class="btn btn-primary btn-lg-custom">
+                        <i class="fas fa-stethoscope icon-large d-block mb-2"></i>
+                        Panel de Médico
+                    </a>
+                    {% elif current_user.is_authenticated and current_user.es_admin_centro %}
+                    <a href="{{ url_for('admin_centro.inicio') }}" class="btn btn-primary btn-lg-custom">
+                        <i class="fas fa-hospital-user icon-large d-block mb-2"></i>
+                        Panel de Centro
+                    </a>
+                    {% elif current_user.is_authenticated and current_user.es_admin_sistema %}
+                    <a href="{{ url_for('admin.inicio') }}" class="btn btn-primary btn-lg-custom">
+                        <i class="fas fa-cogs icon-large d-block mb-2"></i>
+                        Panel de Administrador
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('auth.registro_paciente') }}" class="btn btn-primary btn-lg-custom">
+                        <i class="fas fa-user-plus icon-large d-block mb-2"></i>
+                        Regístrate
+                    </a>
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-success btn-lg-custom">
+                        <i class="fas fa-sign-in-alt icon-large d-block mb-2"></i>
+                        Iniciar Sesión
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sección ¿Cómo funciona? con instrucciones visuales -->
+<div class="row mb-5">
+    <div class="col-12 text-center mb-4">
+        <h2 class="fw-bold"><i class="fas fa-question-circle"></i> ¿Cómo funciona?</h2>
+    </div>
+
+    <div class="col-md-3 text-center mb-4">
+        <div class="card h-100 border-primary">
+            <div class="card-body">
+                <i class="fas fa-user-plus text-primary icon-large mb-3"></i>
+                <h3 class="card-title h4">Paso 1</h3>
+                <p class="card-text">Regístrate gratis en nuestra plataforma</p>
+            </div>
+            <div class="card-footer bg-primary text-white">
+                Fácil y rápido
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 text-center mb-4">
+        <div class="card h-100 border-primary">
+            <div class="card-body">
+                <i class="fas fa-calendar-alt text-primary icon-large mb-3"></i>
+                <h3 class="card-title h4">Paso 2</h3>
+                <p class="card-text">Selecciona especialidad y fecha para tu cita</p>
+            </div>
+            <div class="card-footer bg-primary text-white">
+                Horarios flexibles
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 text-center mb-4">
+        <div class="card h-100 border-primary">
+            <div class="card-body">
+                <i class="fas fa-video text-primary icon-large mb-3"></i>
+                <h3 class="card-title h4">Paso 3</h3>
+                <p class="card-text">Conecta con tu médico por videollamada</p>
+            </div>
+            <div class="card-footer bg-primary text-white">
+                Sin desplazamientos
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 text-center mb-4">
+        <div class="card h-100 border-primary">
+            <div class="card-body">
+                <i class="fas fa-file-medical text-primary icon-large mb-3"></i>
+                <h3 class="card-title h4">Paso 4</h3>
+                <p class="card-text">Recibe diagnóstico y recetas digitales</p>
+            </div>
+            <div class="card-footer bg-primary text-white">
+                100% válidas
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Especialidades médicas destacadas -->
+<div class="row mb-5">
+    <div class="col-12 text-center mb-4">
+        <h2 class="fw-bold"><i class="fas fa-stethoscope"></i> Especialidades médicas</h2>
+    </div>
+
+    {% for especialidad in especialidades %}
+    <div class="col-md-3 col-sm-6 mb-4">
+        <a href="{{ url_for('main.especialidad', id=especialidad.id) }}" class="text-decoration-none">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fas fa-{{ especialidad.icono or 'heartbeat' }} text-primary icon-large mb-3"></i>
+                    <h3 class="card-title h5">{{ especialidad.nombre }}</h3>
+                </div>
+            </div>
+        </a>
+    </div>
+    {% endfor %}
+
+    <div class="col-12 text-center mt-3">
+        <a href="{{ url_for('main.especialidades') }}" class="btn btn-outline-primary">
+            <i class="fas fa-plus-circle"></i> Ver todas las especialidades
+        </a>
+    </div>
+</div>
+
+<!-- Centros médicos participantes -->
+<div class="row mb-5">
+    <div class="col-12 text-center mb-4">
+        <h2 class="fw-bold"><i class="fas fa-hospital"></i> Centros médicos</h2>
+    </div>
+
+    {% for centro in centros_medicos %}
+    <div class="col-md-6 mb-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 text-center">
+                        {% if centro.logo %}
+                        <img src="{{ url_for('static', filename='uploads/logos/' + centro.logo) }}"
+                            alt="{{ centro.nombre }}" class="img-fluid">
+                        {% else %}
+                        <i class="fas fa-hospital text-primary icon-large"></i>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-9">
+                        <h3 class="card-title h5">{{ centro.nombre }}</h3>
+                        <p class="card-text">
+                            <i class="fas fa-map-marker-alt text-danger"></i> {{ centro.direccion_completa }}
+                            <br>
+                            <i class="fas fa-phone text-success"></i> {{ centro.telefono }}
+                        </p>
+                        <a href="{{ url_for('main.centro_medico', id=centro.id) }}"
+                            class="btn btn-sm btn-outline-primary">
+                            Ver detalles
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <div class="col-12 text-center mt-3">
+        <a href="{{ url_for('main.centros_medicos') }}" class="btn btn-outline-primary">
+            <i class="fas fa-plus-circle"></i> Ver todos los centros médicos
+        </a>
+    </div>
+</div>
+
+<!-- Características del servicio -->
+<div class="row mb-5">
+    <div class="col-12 text-center mb-4">
+        <h2 class="fw-bold"><i class="fas fa-star"></i> ¿Por qué elegirnos?</h2>
+    </div>
+
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <i class="fas fa-lock text-primary icon-large mb-3"></i>
+                <h3 class="card-title h4">Seguridad</h3>
+                <p class="card-text">Tu información médica está segura y protegida</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <i class="fas fa-user-md text-primary icon-large mb-3"></i>
+                <h3 class="card-title h4">Profesionales</h3>
+                <p class="card-text">Médicos especialistas certificados</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <i class="fas fa-laptop-medical text-primary icon-large mb-3"></i>
+                <h3 class="card-title h4">Accesibilidad</h3>
+                <p class="card-text">Consultas médicas desde cualquier lugar</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Llamado a la acción final -->
+<div class="row">
+    <div class="col-12">
+        <div class="p-4 bg-primary text-white rounded-3 text-center">
+            <h2 class="fw-bold">¿Necesitas atención médica?</h2>
+            <p class="fs-5">Regístrate ahora y comienza a cuidar tu salud</p>
+            <a href="{{ url_for('auth.registro_paciente') }}" class="btn btn-light btn-lg">
+                <i class="fas fa-user-plus"></i> Crear cuenta gratuita
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

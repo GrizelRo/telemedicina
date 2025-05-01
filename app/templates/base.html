@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>{% block title %}{{ app_name }}{% endblock %}</title>
+
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css">
+
+    <!-- Estilos personalizados -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <!-- Estilos específicos de color para los diferentes estados -->
+    <style>
+        :root {
+            /* Colores primarios */
+            --color-primary: #1976D2;
+            --color-secondary: #2E7D32;
+            --color-white: #FFFFFF;
+
+            /* Colores secundarios */
+            --color-primary-light: #64B5F6;
+            --color-secondary-light: #81C784;
+            --color-gray-light: #F5F5F5;
+
+            /* Colores de acento */
+            --color-error: #E53935;
+            --color-warning: #FFB300;
+            --color-special: #7B1FA2;
+
+            /* Colores para estados */
+            --color-confirmed: #43A047;
+            --color-pending: #FB8C00;
+            --color-canceled: #D32F2F;
+            --color-in-progress: #1E88E5;
+
+            /* Textos */
+            --color-text-primary: #212121;
+            --color-text-secondary: #757575;
+            --color-text-disabled: #BDBDBD;
+        }
+
+        /* Aplicar colores personalidos */
+        body {
+            color: var(--color-text-primary);
+        }
+
+        .navbar-custom {
+            background-color: var(--color-primary);
+        }
+
+        .btn-primary {
+            background-color: var(--color-primary);
+            border-color: var(--color-primary);
+        }
+
+        .btn-primary:hover,
+        .btn-primary:focus {
+            background-color: var(--color-primary-light);
+            border-color: var(--color-primary-light);
+        }
+
+        .btn-success {
+            background-color: var(--color-secondary);
+            border-color: var(--color-secondary);
+        }
+
+        .btn-success:hover,
+        .btn-success:focus {
+            background-color: var(--color-secondary-light);
+            border-color: var(--color-secondary-light);
+        }
+
+        /* Estados de citas */
+        .estado-confirmado {
+            color: var(--color-confirmed);
+        }
+
+        .estado-pendiente {
+            color: var(--color-pending);
+        }
+
+        .estado-cancelado {
+            color: var(--color-canceled);
+        }
+
+        .estado-en-progreso {
+            color: var(--color-in-progress);
+        }
+
+        /* Estilos de accesibilidad */
+        .focus-visible:focus {
+            outline: 3px solid var(--color-primary-light);
+            outline-offset: 2px;
+        }
+
+        /* Iconos grandes para interfaces fáciles de usar */
+        .icon-large {
+            font-size: 2rem;
+        }
+
+        /* Botones grandes para facilitar interacción */
+        .btn-lg-custom {
+            padding: 1rem 1.5rem;
+            font-size: 1.25rem;
+        }
+
+        /* Footer */
+        .footer {
+            background-color: var(--color-primary);
+            color: var(--color-white);
+            padding: 2rem 0;
+        }
+
+        /* Estilos para mejorar contraste y legibilidad */
+        .high-contrast {
+            font-weight: 600;
+        }
+    </style>
+
+    <!-- Moment.js para manejo de fechas -->
+    {{ moment.include_moment() }}
+    {{ moment.locale('es') }}
+
+    <!-- Bloque para estilos adicionales específicos de cada página -->
+    {% block styles %}{% endblock %}
+</head>
+
+<body>
+    <!-- Barra de navegación -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('main.inicio') }}">
+                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo Telemedicina" height="40">
+                {{ app_name }}
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain"
+                aria-controls="navbarMain" aria-expanded="false" aria-label="Alternar navegación">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarMain">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link {{ es_activo('/') if request.path == '/' else '' }}"
+                            href="{{ url_for('main.inicio') }}">
+                            <i class="fas fa-home"></i> Inicio
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ es_activo('/especialidades') }}"
+                            href="{{ url_for('main.especialidades') }}">
+                            <i class="fas fa-stethoscope"></i> Especialidades
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ es_activo('/centros-medicos') }}"
+                            href="{{ url_for('main.centros_medicos') }}">
+                            <i class="fas fa-hospital"></i> Centros Médicos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ es_activo('/medicos') }}" href="{{ url_for('main.medicos') }}">
+                            <i class="fas fa-user-md"></i> Médicos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ es_activo('/acerca-de') }}" href="{{ url_for('main.acerca_de') }}">
+                            <i class="fas fa-info-circle"></i> Acerca de
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user-circle"></i> {{ current_user.nombre }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                            {% if current_user.es_paciente %}
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('paciente.inicio') }}">
+                                    <i class="fas fa-tachometer-alt"></i> Panel de Paciente
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('paciente.citas') }}">
+                                    <i class="fas fa-calendar-check"></i> Mis Citas
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('paciente.historial') }}">
+                                    <i class="fas fa-file-medical"></i> Mi Historial
+                                </a>
+                            </li>
+                            {% endif %}
+
+                            {% if current_user.es_medico %}
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('medico.inicio') }}">
+                                    <i class="fas fa-tachometer-alt"></i> Panel de Médico
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('medico.citas') }}">
+                                    <i class="fas fa-calendar-check"></i> Consultas
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('medico.horarios') }}">
+                                    <i class="fas fa-clock"></i> Mis Horarios
+                                </a>
+                            </li>
+                            {% endif %}
+
+                            {% if current_user.es_admin_centro %}
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('admin_centro.inicio') }}">
+                                    <i class="fas fa-tachometer-alt"></i> Panel de Centro
+                                </a>
+                            </li>
+                            {% endif %}
+
+                            {% if current_user.es_admin_sistema %}
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('admin.inicio') }}">
+                                    <i class="fas fa-tachometer-alt"></i> Panel de Administrador
+                                </a>
+                            </li>
+                            {% endif %}
+
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('auth.perfil') }}">
+                                    <i class="fas fa-id-card"></i> Mi Perfil
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('auth.cambiar_password') }}">
+                                    <i class="fas fa-key"></i> Cambiar Contraseña
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+                                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link {{ es_activo('/auth/login') }}" href="{{ url_for('auth.login') }}">
+                            <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ es_activo('/auth/registro/paciente') }}"
+                            href="{{ url_for('auth.registro_paciente') }}">
+                            <i class="fas fa-user-plus"></i> Registrarse
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    <!-- Botón de accesibilidad -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link" href="#" id="accesibilidadDropdown" role="button" data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                            <i class="fas fa-universal-access"></i>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="accesibilidadDropdown">
+                            <li>
+                                <button class="dropdown-item" id="aumentarTexto">
+                                    <i class="fas fa-search-plus"></i> Aumentar texto
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item" id="disminuirTexto">
+                                    <i class="fas fa-search-minus"></i> Disminuir texto
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item" id="altoContraste">
+                                    <i class="fas fa-adjust"></i> Alto contraste
+                                </button>
+                            </li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('main.accesibilidad') }}">
+                                    <i class="fas fa-info-circle"></i> Más opciones
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenedor principal -->
+    <main class="container py-4">
+        <!-- Mensajes flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <!-- Contenido de la página -->
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Pie de página -->
+    <footer class="footer mt-auto">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h5>{{ app_name }}</h5>
+                    <p>Plataforma de telemedicina para centros médicos públicos</p>
+                    <p>
+                        <a href="{{ url_for('main.verificar_documento_form') }}" class="text-white">
+                            <i class="fas fa-check-circle"></i> Verificar documento médico
+                        </a>
+                    </p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Enlaces útiles</h5>
+                    <ul class="list-unstyled">
+                        <li>
+                            <a href="{{ url_for('main.especialidades') }}" class="text-white">
+                                <i class="fas fa-stethoscope"></i> Especialidades médicas
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('main.centros_medicos') }}" class="text-white">
+                                <i class="fas fa-hospital"></i> Centros médicos
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('main.medicos') }}" class="text-white">
+                                <i class="fas fa-user-md"></i> Nuestros médicos
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('main.info_pacientes') }}" class="text-white">
+                                <i class="fas fa-info-circle"></i> Información para pacientes
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('main.instrucciones_uso') }}" class="text-white">
+                                <i class="fas fa-book"></i> Instrucciones de uso
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5>Información legal</h5>
+                    <ul class="list-unstyled">
+                        <li>
+                            <a href="{{ url_for('main.terminos') }}" class="text-white">
+                                <i class="fas fa-file-contract"></i> Términos y condiciones
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('main.privacidad') }}" class="text-white">
+                                <i class="fas fa-shield-alt"></i> Política de privacidad
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('main.acerca_de') }}" class="text-white">
+                                <i class="fas fa-info-circle"></i> Acerca de
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('main.contacto') }}" class="text-white">
+                                <i class="fas fa-envelope"></i> Contacto
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('main.ayuda') }}" class="text-white">
+                                <i class="fas fa-question-circle"></i> Ayuda
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="my-4 bg-white">
+            <div class="row">
+                <div class="col-md-6">
+                    <p>&copy; {{ current_year }} {{ app_name }}. Todos los derechos reservados.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <a href="#" class="text-white me-3"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="text-white me-3"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="text-white me-3"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="text-white"><i class="fab fa-youtube"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Script para funciones de accesibilidad -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Obtener elementos
+            const aumentarTexto = document.getElementById('aumentarTexto');
+            const disminuirTexto = document.getElementById('disminuirTexto');
+            const altoContraste = document.getElementById('altoContraste');
+
+            // Tamaño de texto actual
+            let tamanoActual = 100;
+
+            // Estado del contraste
+            let contrasteAlto = false;
+
+            // Función para aumentar el tamaño del texto
+            aumentarTexto.addEventListener('click', function () {
+                if (tamanoActual < 150) {
+                    tamanoActual += 10;
+                    document.body.style.fontSize = tamanoActual + '%';
+                    localStorage.setItem('tamanoTexto', tamanoActual);
+                }
+            });
+
+            // Función para disminuir el tamaño del texto
+            disminuirTexto.addEventListener('click', function () {
+                if (tamanoActual > 80) {
+                    tamanoActual -= 10;
+                    document.body.style.fontSize = tamanoActual + '%';
+                    localStorage.setItem('tamanoTexto', tamanoActual);
+                }
+            });
+
+            // Función para alternar alto contraste
+            altoContraste.addEventListener('click', function () {
+                contrasteAlto = !contrasteAlto;
+                if (contrasteAlto) {
+                    document.body.classList.add('high-contrast');
+                    localStorage.setItem('altoContraste', 'true');
+                } else {
+                    document.body.classList.remove('high-contrast');
+                    localStorage.setItem('altoContraste', 'false');
+                }
+            });
+
+            // Cargar preferencias guardadas
+            const tamanoGuardado = localStorage.getItem('tamanoTexto');
+            const contrasteGuardado = localStorage.getItem('altoContraste');
+
+            if (tamanoGuardado) {
+                tamanoActual = parseInt(tamanoGuardado);
+                document.body.style.fontSize = tamanoActual + '%';
+            }
+
+            if (contrasteGuardado === 'true') {
+                contrasteAlto = true;
+                document.body.classList.add('high-contrast');
+            }
+        });
+    </script>
+
+    <!-- Bloque para scripts adicionales específicos de cada página -->
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

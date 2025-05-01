@@ -1,0 +1,574 @@
+{% extends "base.html" %}
+
+{% block title %}Registrar Consulta - {{ app_name }}{% endblock %}
+
+{% block styles %}
+<style>
+    .consultation-sidebar {
+        position: sticky;
+        top: 20px;
+    }
+
+    .form-tab {
+        display: none;
+    }
+
+    .form-tab.active {
+        display: block;
+    }
+
+    .nav-tabs .nav-link.active {
+        background-color: var(--color-primary);
+        color: white;
+    }
+
+    .required-field::after {
+        content: " *";
+        color: red;
+    }
+
+    .action-buttons {
+        position: sticky;
+        bottom: 0;
+        background-color: #fff;
+        padding: 15px 0;
+        border-top: 1px solid #ddd;
+        z-index: 100;
+    }
+
+    .patient-info-card {
+        background-color: #f8f9fa;
+    }
+
+    .medicalrecord-entry {
+        border-left: 3px solid var(--color-primary);
+        padding-left: 15px;
+        margin-bottom: 15px;
+    }
+
+    .allergy-badge {
+        background-color: #ffcccc;
+        color: #cc0000;
+        padding: 5px 10px;
+        border-radius: 4px;
+        margin-right: 5px;
+        margin-bottom: 5px;
+        display: inline-block;
+    }
+
+    .chronic-badge {
+        background-color: #ffffcc;
+        color: #666600;
+        padding: 5px 10px;
+        border-radius: 4px;
+        margin-right: 5px;
+        margin-bottom: 5px;
+        display: inline-block;
+    }
+
+    .timer-container {
+        font-size: 1.5rem;
+        padding: 10px;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        margin-bottom: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="fas fa-stethoscope"></i> Consulta Médica
+                </h4>
+                <div id="timer" class="bg-white text-primary py-1 px-3 rounded">
+                    00:00:00
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Datos de la consulta -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <p class="mb-1">
+                            <strong>Paciente:</strong> {{ paciente.usuario.nombre_completo }}
+                        </p>
+                        <p class="mb-1">
+                            <strong>Documento:</strong> {{ paciente.usuario.tipo_documento }}: {{
+                            paciente.usuario.numero_documento }}
+                        </p>
+                        <p class="mb-1">
+                            <strong>Edad:</strong>
+                            {% set edad = ((consulta.fecha_inicio or now()) - paciente.usuario.fecha_nacimiento).days //
+                            365 %}
+                            {{ edad }} años
+                        </p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <p class="mb-1">
+                            <strong>Fecha:</strong> {{ consulta.fecha_inicio|fecha_hora_formato or
+                            now()|fecha_hora_formato }}
+                        </p>
+                        <p class="mb-1">
+                            <strong>Centro Médico:</strong> {{ consulta.cita.centro_medico.nombre }}
+                        </p>
+                        <p class="mb-1">
+                            <strong>Especialidad:</strong> {{ consulta.cita.especialidad.nombre }}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Alerta de alergias -->
+                {% if paciente.alergias %}
+                <div class="alert alert-danger mb-4">
+                    <i class="fas fa-exclamation-triangle"></i> <strong>¡ATENCIÓN! El paciente reporta las siguientes
+                        alergias:</strong>
+                    <p class="mb-0">{{ paciente.alergias }}</p>
+                </div>
+                {% endif %}
+
+                <div class="row">
+                    <!-- Formulario de consulta (9 columnas) -->
+                    <div class="col-lg-9">
+                        <form method="POST" action="{{ url_for('consulta.registrar', consulta_id=consulta.id) }}"
+                            id="consultation-form">
+                            {{ form.csrf_token }}
+                            {{ form.consulta_id }}
+
+                            <!-- Navegación entre secciones del formulario -->
+                            <ul class="nav nav-tabs mb-4" id="consultationTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="motivo-tab" data-bs-toggle="tab"
+                                        data-bs-target="#motivo-tab-pane" type="button" role="tab"
+                                        aria-controls="motivo-tab-pane" aria-selected="true">
+                                        <i class="fas fa-clipboard-list"></i> Motivo y Síntomas
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="antecedentes-tab" data-bs-toggle="tab"
+                                        data-bs-target="#antecedentes-tab-pane" type="button" role="tab"
+                                        aria-controls="antecedentes-tab-pane" aria-selected="false">
+                                        <i class="fas fa-history"></i> Antecedentes
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="exploracion-tab" data-bs-toggle="tab"
+                                        data-bs-target="#exploracion-tab-pane" type="button" role="tab"
+                                        aria-controls="exploracion-tab-pane" aria-selected="false">
+                                        <i class="fas fa-search"></i> Exploración
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="diagnostico-tab" data-bs-toggle="tab"
+                                        data-bs-target="#diagnostico-tab-pane" type="button" role="tab"
+                                        aria-controls="diagnostico-tab-pane" aria-selected="false">
+                                        <i class="fas fa-diagnoses"></i> Diagnóstico
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="tratamiento-tab" data-bs-toggle="tab"
+                                        data-bs-target="#tratamiento-tab-pane" type="button" role="tab"
+                                        aria-controls="tratamiento-tab-pane" aria-selected="false">
+                                        <i class="fas fa-pills"></i> Tratamiento
+                                    </button>
+                                </li>
+                            </ul>
+
+                            <div class="tab-content" id="consultationTabsContent">
+                                <!-- Motivo y Síntomas -->
+                                <div class="tab-pane fade show active" id="motivo-tab-pane" role="tabpanel"
+                                    aria-labelledby="motivo-tab" tabindex="0">
+                                    <div class="mb-3">
+                                        <label for="motivo_consulta" class="form-label required-field">
+                                            <i class="fas fa-clipboard-list"></i> Motivo de Consulta
+                                        </label>
+                                        {{ form.motivo_consulta(class="form-control" + (" is-invalid" if
+                                        form.motivo_consulta.errors else ""), rows=3) }}
+                                        {% if form.motivo_consulta.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.motivo_consulta.errors %}
+                                            {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                        <div class="form-text">Registre la razón por la que el paciente acude a la
+                                            consulta.</div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="sintomas" class="form-label required-field">
+                                            <i class="fas fa-thermometer"></i> Síntomas
+                                        </label>
+                                        {{ form.sintomas(class="form-control" + (" is-invalid" if form.sintomas.errors
+                                        else ""), rows=5) }}
+                                        {% if form.sintomas.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.sintomas.errors %}
+                                            {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                        <div class="form-text">Describa los síntomas que el paciente presenta,
+                                            incluyendo tiempo de evolución.</div>
+                                    </div>
+
+                                    <div class="text-end mt-4">
+                                        <button type="button" class="btn btn-primary"
+                                            onclick="switchTab('antecedentes-tab')">
+                                            Siguiente <i class="fas fa-arrow-right"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Antecedentes -->
+                                <div class="tab-pane fade" id="antecedentes-tab-pane" role="tabpanel"
+                                    aria-labelledby="antecedentes-tab" tabindex="0">
+                                    <div class="mb-3">
+                                        <label for="antecedentes" class="form-label">
+                                            <i class="fas fa-history"></i> Antecedentes Relevantes
+                                        </label>
+                                        {{ form.antecedentes(class="form-control" + (" is-invalid" if
+                                        form.antecedentes.errors else ""), rows=5) }}
+                                        {% if form.antecedentes.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.antecedentes.errors %}
+                                            {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                        <div class="form-text">Registre los antecedentes personales y familiares
+                                            relevantes para esta consulta.</div>
+                                    </div>
+
+                                    <div class="d-flex justify-content-between mt-4">
+                                        <button type="button" class="btn btn-outline-secondary"
+                                            onclick="switchTab('motivo-tab')">
+                                            <i class="fas fa-arrow-left"></i> Anterior
+                                        </button>
+                                        <button type="button" class="btn btn-primary"
+                                            onclick="switchTab('exploracion-tab')">
+                                            Siguiente <i class="fas fa-arrow-right"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Exploración -->
+                                <div class="tab-pane fade" id="exploracion-tab-pane" role="tabpanel"
+                                    aria-labelledby="exploracion-tab" tabindex="0">
+                                    <div class="mb-3">
+                                        <label for="exploracion" class="form-label">
+                                            <i class="fas fa-search"></i> Exploración Física
+                                        </label>
+                                        {{ form.exploracion(class="form-control" + (" is-invalid" if
+                                        form.exploracion.errors else ""), rows=5) }}
+                                        {% if form.exploracion.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.exploracion.errors %}
+                                            {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                        <div class="form-text">Registre los hallazgos de la exploración física del
+                                            paciente.</div>
+                                    </div>
+
+                                    <div class="d-flex justify-content-between mt-4">
+                                        <button type="button" class="btn btn-outline-secondary"
+                                            onclick="switchTab('antecedentes-tab')">
+                                            <i class="fas fa-arrow-left"></i> Anterior
+                                        </button>
+                                        <button type="button" class="btn btn-primary"
+                                            onclick="switchTab('diagnostico-tab')">
+                                            Siguiente <i class="fas fa-arrow-right"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Diagnóstico -->
+                                <div class="tab-pane fade" id="diagnostico-tab-pane" role="tabpanel"
+                                    aria-labelledby="diagnostico-tab" tabindex="0">
+                                    <div class="mb-3">
+                                        <label for="diagnostico" class="form-label required-field">
+                                            <i class="fas fa-diagnoses"></i> Diagnóstico
+                                        </label>
+                                        {{ form.diagnostico(class="form-control" + (" is-invalid" if
+                                        form.diagnostico.errors else ""), rows=5) }}
+                                        {% if form.diagnostico.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.diagnostico.errors %}
+                                            {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                        <div class="form-text">Registre los diagnósticos presuntivos o confirmados del
+                                            paciente.</div>
+                                    </div>
+
+                                    <div class="d-flex justify-content-between mt-4">
+                                        <button type="button" class="btn btn-outline-secondary"
+                                            onclick="switchTab('exploracion-tab')">
+                                            <i class="fas fa-arrow-left"></i> Anterior
+                                        </button>
+                                        <button type="button" class="btn btn-primary"
+                                            onclick="switchTab('tratamiento-tab')">
+                                            Siguiente <i class="fas fa-arrow-right"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Tratamiento y Recomendaciones -->
+                                <div class="tab-pane fade" id="tratamiento-tab-pane" role="tabpanel"
+                                    aria-labelledby="tratamiento-tab" tabindex="0">
+                                    <div class="mb-3">
+                                        <label for="plan_tratamiento" class="form-label required-field">
+                                            <i class="fas fa-pills"></i> Plan de Tratamiento
+                                        </label>
+                                        {{ form.plan_tratamiento(class="form-control" + (" is-invalid" if
+                                        form.plan_tratamiento.errors else ""), rows=5)
+                                        }}
+                                        {% if form.plan_tratamiento.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.plan_tratamiento.errors %}
+                                            {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                        <div class="form-text">Describa el plan de tratamiento para el paciente.</div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="recomendaciones" class="form-label">
+                                            <i class="fas fa-clipboard-check"></i> Recomendaciones
+                                        </label>
+                                        {{ form.recomendaciones(class="form-control" + (" is-invalid" if
+                                        form.recomendaciones.errors else ""), rows=5)
+                                        }}
+                                        {% if form.recomendaciones.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.recomendaciones.errors %}
+                                            {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                        <div class="form-text">Registre las recomendaciones generales para el paciente.
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <div class="form-check form-switch">
+                                            {{ form.requiere_seguimiento(class="form-check-input") }}
+                                            <label class="form-check-label" for="requiere_seguimiento">
+                                                <i class="fas fa-calendar-check"></i> Requiere seguimiento
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div id="seguimiento-details" class="mb-3 p-3 border rounded bg-light"
+                                        style="display: none;">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <label for="tiempo_seguimiento" class="form-label">
+                                                    <i class="fas fa-clock"></i> Tiempo de Seguimiento (días)
+                                                </label>
+                                                {{ form.tiempo_seguimiento(class="form-control" + (" is-invalid" if
+                                                form.tiempo_seguimiento.errors else
+                                                ""), type="number", min=1, max=365) }}
+                                                {% if form.tiempo_seguimiento.errors %}
+                                                <div class="invalid-feedback">
+                                                    {% for error in form.tiempo_seguimiento.errors %}
+                                                    {{ error }}
+                                                    {% endfor %}
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-md-12 mt-3">
+                                                <label for="instrucciones_seguimiento" class="form-label">
+                                                    <i class="fas fa-clipboard-list"></i> Instrucciones de Seguimiento
+                                                </label>
+                                                {{ form.instrucciones_seguimiento(class="form-control" + (" is-invalid"
+                                                if
+                                                form.instrucciones_seguimiento.errors else ""), rows=3) }}
+                                                {% if form.instrucciones_seguimiento.errors %}
+                                                <div class="invalid-feedback">
+                                                    {% for error in form.instrucciones_seguimiento.errors %}
+                                                    {{ error }}
+                                                    {% endfor %}
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex justify-content-between mt-4">
+                                        <button type="button" class="btn btn-outline-secondary"
+                                            onclick="switchTab('diagnostico-tab')">
+                                            <i class="fas fa-arrow-left"></i> Anterior
+                                        </button>
+                                        <button type="submit" name="guardar" class="btn btn-success">
+                                            <i class="fas fa-save"></i> Guardar Consulta
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Botones de acción flotantes -->
+                            <div class="action-buttons mt-4">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <button type="submit" name="guardar" class="btn btn-success">
+                                            <i class="fas fa-save"></i> Guardar
+                                        </button>
+                                    </div>
+                                    <div>
+                                        <div class="btn-group">
+                                            <a href="{{ url_for('consulta.emitir_receta', consulta_id=consulta.id) }}"
+                                                class="btn btn-outline-primary">
+                                                <i class="fas fa-file-prescription"></i> Emitir Receta
+                                            </a>
+                                            <a href="{{ url_for('consulta.emitir_orden', consulta_id=consulta.id) }}"
+                                                class="btn btn-outline-info">
+                                                <i class="fas fa-vial"></i> Emitir Orden
+                                            </a>
+                                        </div>
+                                        {% if not consulta.fecha_fin %}
+                                        <button type="submit" name="finalizar" class="btn btn-danger ms-2">
+                                            <i class="fas fa-check-circle"></i> Finalizar Consulta
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Panel lateral con información del paciente (3 columnas) -->
+                    <div class="col-lg-3">
+                        <div class="consultation-sidebar">
+                            <!-- Datos del paciente -->
+                            <div class="card mb-3 patient-info-card shadow-sm">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-user"></i> Datos del Paciente
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <p class="mb-1">
+                                        <strong><i class="fas fa-birthday-cake"></i> Edad:</strong>
+                                        {% set edad = ((consulta.fecha_inicio or now()) -
+                                        paciente.usuario.fecha_nacimiento).days // 365 %}
+                                        {{ edad }} años
+                                    </p>
+                                    <p class="mb-1">
+                                        <strong><i class="fas fa-venus-mars"></i> Género:</strong>
+                                        {{ paciente.usuario.genero|capitalize }}
+                                    </p>
+                                    {% if paciente.grupo_sanguineo %}
+                                    <p class="mb-1">
+                                        <strong><i class="fas fa-tint"></i> Grupo Sanguíneo:</strong>
+                                        {{ paciente.grupo_sanguineo }}
+                                    </p>
+                                    {% endif %}
+
+                                    <hr>
+
+                                    <!-- Alergias -->
+                                    <div class="mb-3">
+                                        <h6><i class="fas fa-allergies text-danger"></i> Alergias</h6>
+                                        {% if paciente.alergias %}
+                                        <p class="small">{{ paciente.alergias }}</p>
+                                        {% else %}
+                                        <p class="text-muted small">No registra alergias</p>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Enfermedades crónicas -->
+                                    <div class="mb-3">
+                                        <h6><i class="fas fa-heartbeat text-warning"></i> Enfermedades Crónicas</h6>
+                                        {% if paciente.enfermedades_cronicas %}
+                                        <p class="small">{{ paciente.enfermedades_cronicas }}</p>
+                                        {% else %}
+                                        <p class="text-muted small">No registra enfermedades crónicas</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Historial resumido -->
+                            <div class="card mb-3 shadow-sm">
+                                <div
+                                    class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-history"></i> Historial Clínico
+                                    </h5>
+                                    <a href="{{ url_for('consulta.historial_paciente', paciente_id=paciente.usuario_id) }}"
+                                        class="btn btn-sm btn-light">
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                </div>
+                                <div class="card-body">
+                                    {% if historial and registros %}
+                                    <div class="medicalrecord-entries">
+                                        {% for registro in registros[:5] %}
+                                        <div class="medicalrecord-entry">
+                                            <h6 class="mb-1">{{ registro.fecha|fecha_formato }}</h6>
+                                            <p class="mb-1"><strong>{{ registro.tipo|capitalize }}</strong></p>
+                                            <p class="small mb-0">{{ registro.descripcion|truncate(100) }}</p>
+                                        </div>
+                                        {% endfor %}
+                                        {% if registros|length > 5 %}
+                                        <div class="text-center mt-3">
+                                            <a href="{{ url_for('consulta.historial_paciente', paciente_id=paciente.usuario_id) }}"
+                                                class="btn btn-sm btn-outline-primary">
+                                                Ver historial completo
+                                            </a>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    {% else %}
+                                    <p class="text-muted">No hay registros en el historial clínico.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Temporizador de consulta
+        let startTime = {% if consulta.fecha_inicio %}new Date({{ consulta.fecha_inicio|tojson }}){% else %}new Date(){% endif %};
+        let timerInterval;
+        let timerElement = document.getElementById('timer');
+
+        function updateTimer() {
+            const now = new Date();
+            const diff = new Date(now - startTime);
+
+            // Calcular horas, minutos y segundos
+            const hours = Math.floor(diff / 3600000);
+            const minutes = Math.floor((diff % 3600000) / 60000);
+            const seconds = Math.floor((diff % 60000) / 1000);
+
+            // Formatear como HH:MM:SS
+            const formattedTime =
+                (hours < 10 ? '0' : '') + hours + ':' +
+                (minutes < 10 ? '0' : '') + minutes + ':' +
+                (seconds < 10 ? '0' : '') + seconds;
+
+            timerElement.textContent = formattedTime;
+        }
+
+        // Iniciar temporizador
+        updateTimer();
+        timerInterval = setInterval(updateTimer, 1000);
+    });
+</script>
+        const seguimientoDetails = document.getElementById('seguimiento-details');        function toggleSeguimiento() {            if (requiereSeguimiento.checked) {                seguimientoDetails.style.display = 'block';            } else {                seguimientoDetails.style.display = 'none';            }        }        // Estado inicial        toggleSeguimiento();        // Agregar evento        requiereSeguimiento.addEventListener('change', toggleSeguimiento);        // Precargar formulario si hay datos        if ("{{ form.motivo_consulta.data }}") {            document.querySelector('#motivo-tab').click();        }        // Gestionar envío del formulario        const form = document.getElementById('consultation-form');        form.addEventListener('submit', function (event) {            // Si se presiona el botón de finalizar, confirmar            if (event.submitter && event.submitter.name === 'finalizar') {                if (!confirm('¿Está seguro de que desea finalizar la consulta? Esta acción no se puede deshacer.')) {                    event.preventDefault();                }            }        });    });    // Función para cambiar entre pestañas    function switchTab(tabId) {        document.getElementById(tabId).click();    }</script>{% endblock %}

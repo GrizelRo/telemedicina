@@ -1,0 +1,557 @@
+{% extends "base.html" %}
+
+{% block title %}Emitir Receta Médica - {{ app_name }}{% endblock %}
+
+{% block styles %}
+<style>
+    .card-header-custom {
+        background-color: var(--color-primary);
+        color: white;
+    }
+
+    .required-field::after {
+        content: " *";
+        color: red;
+    }
+
+    .medicamento-item {
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        margin-bottom: 15px;
+        padding: 15px;
+        position: relative;
+    }
+
+    .btn-remove-med {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+    }
+
+    .patient-info {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+
+    .prescription-preview {
+        border: 1px dashed #ccc;
+        padding: 20px;
+        margin-top: 20px;
+        background-color: #fff;
+    }
+
+    .prescription-header {
+        text-align: center;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #ddd;
+        padding-bottom: 10px;
+    }
+
+    .prescription-body {
+        margin-bottom: 20px;
+    }
+
+    .prescription-footer {
+        border-top: 1px solid #ddd;
+        padding-top: 10px;
+        text-align: center;
+        font-size: 0.9rem;
+        color: #666;
+    }
+
+    .signature-area {
+        margin-top: 30px;
+        text-align: center;
+    }
+
+    .signature-line {
+        width: 200px;
+        border-bottom: 1px solid #000;
+        margin: 10px auto;
+    }
+
+    .validation-code {
+        background-color: #f8f9fa;
+        padding: 10px;
+        text-align: center;
+        font-weight: bold;
+        letter-spacing: 2px;
+        margin-top: 15px;
+        border: 1px dashed #ddd;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header card-header-custom">
+                <h4 class="mb-0">
+                    <i class="fas fa-file-prescription"></i> Emisión de Receta Médica
+                </h4>
+            </div>
+            <div class="card-body">
+                <!-- Información del paciente -->
+                <div class="patient-info">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-1">
+                                <strong>Paciente:</strong> {{ consulta.cita.paciente.usuario.nombre_completo }}
+                            </p>
+                            <p class="mb-1">
+                                <strong>Documento:</strong> {{ consulta.cita.paciente.usuario.tipo_documento }}: {{
+                                consulta.cita.paciente.usuario.numero_documento }}
+                            </p>
+                            <p class="mb-1">
+                                <strong>Edad:</strong>
+                                {% set edad = ((consulta.fecha_inicio or now()) -
+                                consulta.cita.paciente.usuario.fecha_nacimiento).days // 365 %}
+                                {{ edad }} años
+                            </p>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            <p class="mb-1">
+                                <strong>Médico:</strong> Dr. {{ consulta.cita.medico.usuario.nombre_completo }}
+                            </p>
+                            <p class="mb-1">
+                                <strong>Especialidad:</strong> {{ consulta.cita.especialidad.nombre }}
+                            </p>
+                            <p class="mb-1">
+                                <strong>Fecha:</strong> {{ now()|fecha_formato }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alerta de alergias si las hay -->
+                {% if consulta.cita.paciente.alergias %}
+                <div class="alert alert-danger mb-4">
+                    <i class="fas fa-exclamation-triangle"></i> <strong>¡ATENCIÓN! El paciente reporta las siguientes
+                        alergias:</strong>
+                    <p class="mb-0">{{ consulta.cita.paciente.alergias }}</p>
+                </div>
+                {% endif %}
+
+                <!-- Formulario de emisión de receta -->
+                <form method="POST" action="{{ url_for('consulta.emitir_receta', consulta_id=consulta.id) }}"
+                    id="formReceta">
+                    {{ form.csrf_token }}
+                    {{ form.consulta_id }}
+                    {{ form.hay_medicamentos(type="hidden", value="0") }}
+
+                    <div class="mb-4">
+                        <h5><i class="fas fa-notes-medical"></i> Información de la Receta</h5>
+                        <hr>
+
+                        <div class="mb-3">
+                            <label for="diagnostico" class="form-label required-field">
+                                <i class="fas fa-diagnoses"></i> Diagnóstico
+                            </label>
+                            {{ form.diagnostico(class="form-control" + (" is-invalid" if form.diagnostico.errors else
+                            ""), rows=3) }}
+                            {% if form.diagnostico.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.diagnostico.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5><i class="fas fa-pills"></i> Medicamentos</h5>
+                            <button type="button" class="btn btn-primary" id="btnAgregarMedicamento">
+                                <i class="fas fa-plus"></i> Agregar Medicamento
+                            </button>
+                        </div>
+                        <hr>
+
+                        <div id="medicamentos-container">
+                            <!-- Aquí se agregarán los medicamentos dinámicamente -->
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> Agregue al menos un medicamento a la receta.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones de acción -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('consulta.registrar', consulta_id=consulta.id) }}"
+                            class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Volver a la Consulta
+                        </a>
+                        <button type="button" class="btn btn-info" id="btnVistaPrevia">
+                            <i class="fas fa-eye"></i> Vista Previa
+                        </button>
+                        <button type="submit" class="btn btn-success" id="btnEmitirReceta">
+                            <i class="fas fa-file-prescription"></i> Emitir Receta
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Vista previa de la receta (oculta por defecto) -->
+                <div id="vistaPreviaReceta" class="prescription-preview mt-4" style="display: none;">
+                    <div class="prescription-header">
+                        <h4>RECETA MÉDICA</h4>
+                        <p>{{ app_name }}</p>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="mb-0"><strong>PACIENTE:</strong> {{ consulta.cita.paciente.usuario.nombre_completo
+                                }}</p>
+                            <p class="mb-0"><strong>DOCUMENTO:</strong> {{ consulta.cita.paciente.usuario.tipo_documento
+                                }}: {{ consulta.cita.paciente.usuario.numero_documento }}</p>
+                            <p class="mb-0"><strong>FECHA:</strong> {{ now()|fecha_formato }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-0"><strong>MÉDICO:</strong> Dr. {{ consulta.cita.medico.usuario.nombre_completo
+                                }}</p>
+                            <p class="mb-0"><strong>ESPECIALIDAD:</strong> {{ consulta.cita.especialidad.nombre }}</p>
+                            <p class="mb-0"><strong>LICENCIA:</strong> {{ consulta.cita.medico.numero_licencia }}</p>
+                        </div>
+                    </div>
+
+                    <div class="prescription-body">
+                        <h5>DIAGNÓSTICO</h5>
+                        <p id="preview-diagnostico">-</p>
+
+                        <h5>MEDICAMENTOS</h5>
+                        <div id="preview-medicamentos">
+                            <p class="text-muted">No hay medicamentos agregados.</p>
+                        </div>
+                    </div>
+
+                    <div class="signature-area">
+                        <div class="signature-line"></div>
+                        <p>Dr. {{ consulta.cita.medico.usuario.nombre_completo }}</p>
+                        <p>{{ consulta.cita.especialidad.nombre }}</p>
+                        <p>Lic. {{ consulta.cita.medico.numero_licencia }}</p>
+                    </div>
+
+                    <div class="validation-code">
+                        CÓDIGO DE VALIDACIÓN: XXXXXXXX
+                    </div>
+
+                    <div class="prescription-footer">
+                        <p>Documento generado por {{ app_name }} - Verificable en https://telemedicina.org/verificar</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Plantilla para medicamento -->
+<template id="template-medicamento">
+    <div class="medicamento-item" data-index="{INDEX}">
+        <button type="button" class="btn btn-sm btn-danger btn-remove-med">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <h6 class="mb-3">Medicamento #{INDEX}</h6>
+
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="form-label required-field">Nombre del Medicamento</label>
+                <input type="text" class="form-control med-nombre" required placeholder="Ej: Paracetamol">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Presentación</label>
+                <input type="text" class="form-control med-presentacion" placeholder="Ej: Tabletas 500 mg">
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label class="form-label required-field">Dosis</label>
+                <input type="text" class="form-control med-dosis" required placeholder="Ej: 1 tableta">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label required-field">Vía de Administración</label>
+                <select class="form-control med-via" required>
+                    <option value="">Seleccione...</option>
+                    <option value="oral">Oral</option>
+                    <option value="sublingual">Sublingual</option>
+                    <option value="topica">Tópica</option>
+                    <option value="inhalatoria">Inhalatoria</option>
+                    <option value="rectal">Rectal</option>
+                    <option value="vaginal">Vaginal</option>
+                    <option value="ocular">Ocular</option>
+                    <option value="otica">Ótica</option>
+                    <option value="nasal">Nasal</option>
+                    <option value="parenteral">Parenteral</option>
+                    <option value="otra">Otra</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Cantidad</label>
+                <input type="text" class="form-control med-cantidad" placeholder="Ej: 30 tabletas">
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="form-label required-field">Frecuencia</label>
+                <input type="text" class="form-control med-frecuencia" required placeholder="Ej: Cada 8 horas">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label required-field">Duración</label>
+                <input type="text" class="form-control med-duracion" required placeholder="Ej: Por 7 días">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <label class="form-label">Instrucciones Adicionales</label>
+                <textarea class="form-control med-instrucciones"
+                    placeholder="Ej: Tomar después de los alimentos"></textarea>
+            </div>
+        </div>
+    </div>
+</template>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Variables
+        let medicamentosCount = 0;
+        const medicamentosContainer = document.getElementById('medicamentos-container');
+        const btnAgregarMedicamento = document.getElementById('btnAgregarMedicamento');
+        const btnVistaPrevia = document.getElementById('btnVistaPrevia');
+        const btnEmitirReceta = document.getElementById('btnEmitirReceta');
+        const formReceta = document.getElementById('formReceta');
+        const hiddenMedicamentos = document.getElementById('hay_medicamentos');
+        const templateMedicamento = document.getElementById('template-medicamento');
+        const vistaPreviaReceta = document.getElementById('vistaPreviaReceta');
+
+        // Función para agregar un medicamento
+        function agregarMedicamento() {
+            medicamentosCount++;
+
+            // Limpiar mensaje inicial si es el primer medicamento
+            if (medicamentosCount === 1) {
+                medicamentosContainer.innerHTML = '';
+            }
+
+            // Clonar la plantilla
+            let template = templateMedicamento.innerHTML;
+            template = template.replace(/{INDEX}/g, medicamentosCount);
+
+            // Crear el elemento
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = template;
+            const medicamentoItem = tempDiv.firstElementChild;
+
+            // Agregar al contenedor
+            medicamentosContainer.appendChild(medicamentoItem);
+
+            // Agregar evento para eliminar
+            medicamentoItem.querySelector('.btn-remove-med').addEventListener('click', function () {
+                eliminarMedicamento(medicamentoItem);
+            });
+
+            // Actualizar campo oculto
+            hiddenMedicamentos.value = medicamentosCount > 0 ? '1' : '0';
+        }
+
+        // Función para eliminar un medicamento
+        function eliminarMedicamento(item) {
+            medicamentosContainer.removeChild(item);
+            medicamentosCount--;
+
+            // Mostrar mensaje si no hay medicamentos
+            if (medicamentosCount === 0) {
+                medicamentosContainer.innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Agregue al menos un medicamento a la receta.
+                    </div>
+                `;
+            }
+
+            // Actualizar campo oculto
+            hiddenMedicamentos.value = medicamentosCount > 0 ? '1' : '0';
+
+            // Renumerar medicamentos
+            renumerarMedicamentos();
+        }
+
+        // Función para renumerar medicamentos
+        function renumerarMedicamentos() {
+            const items = medicamentosContainer.querySelectorAll('.medicamento-item');
+            items.forEach((item, index) => {
+                item.dataset.index = index + 1;
+                const title = item.querySelector('h6');
+                title.textContent = `Medicamento #${index + 1}`;
+            });
+        }
+
+        // Función para mostrar vista previa
+        function mostrarVistaPrevia() {
+            // Verificar si hay medicamentos
+            if (medicamentosCount === 0) {
+                alert('Debe agregar al menos un medicamento a la receta.');
+                return;
+            }
+
+            // Diagnóstico
+            const diagnostico = document.getElementById('diagnostico').value.trim();
+            if (!diagnostico) {
+                alert('Debe ingresar un diagnóstico.');
+                return;
+            }
+
+            // Actualizar vista previa
+            document.getElementById('preview-diagnostico').textContent = diagnostico;
+
+            // Actualizar medicamentos
+            const previewMedicamentos = document.getElementById('preview-medicamentos');
+            let medicamentosHtml = '';
+
+            const items = medicamentosContainer.querySelectorAll('.medicamento-item');
+            items.forEach((item, index) => {
+                const nombre = item.querySelector('.med-nombre').value;
+                const presentacion = item.querySelector('.med-presentacion').value;
+                const dosis = item.querySelector('.med-dosis').value;
+                const via = item.querySelector('.med-via').value;
+                const frecuencia = item.querySelector('.med-frecuencia').value;
+                const duracion = item.querySelector('.med-duracion').value;
+                const cantidad = item.querySelector('.med-cantidad').value;
+                const instrucciones = item.querySelector('.med-instrucciones').value;
+
+                medicamentosHtml += `
+                    <div class="mb-4">
+                        <h6>${index + 1}. ${nombre}${presentacion ? ` (${presentacion})` : ''}</h6>
+                        <p><strong>Dosis:</strong> ${dosis}</p>
+                        <p><strong>Vía:</strong> ${getViaText(via)}</p>
+                        <p><strong>Frecuencia:</strong> ${frecuencia}</p>
+                        <p><strong>Duración:</strong> ${duracion}</p>
+                        ${cantidad ? `<p><strong>Cantidad:</strong> ${cantidad}</p>` : ''}
+                        ${instrucciones ? `<p><strong>Instrucciones:</strong> ${instrucciones}</p>` : ''}
+                    </div>
+                `;
+            });
+
+            previewMedicamentos.innerHTML = medicamentosHtml;
+
+            // Mostrar vista previa
+            vistaPreviaReceta.style.display = 'block';
+
+            // Desplazar a la vista previa
+            vistaPreviaReceta.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Función para obtener el texto de la vía de administración
+        function getViaText(value) {
+            const vias = {
+                'oral': 'Oral',
+                'sublingual': 'Sublingual',
+                'topica': 'Tópica',
+                'inhalatoria': 'Inhalatoria',
+                'rectal': 'Rectal',
+                'vaginal': 'Vaginal',
+                'ocular': 'Ocular',
+                'otica': 'Ótica',
+                'nasal': 'Nasal',
+                'parenteral': 'Parenteral',
+                'otra': 'Otra'
+            };
+
+            return vias[value] || value;
+        }
+
+        // Función para recopilar datos de medicamentos para el envío
+        function recopilarMedicamentos() {
+            const medicamentos = [];
+
+            const items = medicamentosContainer.querySelectorAll('.medicamento-item');
+            items.forEach((item) => {
+                const med = {
+                    nombre: item.querySelector('.med-nombre').value,
+                    presentacion: item.querySelector('.med-presentacion').value,
+                    dosis: item.querySelector('.med-dosis').value,
+                    via_administracion: item.querySelector('.med-via').value,
+                    frecuencia: item.querySelector('.med-frecuencia').value,
+                    duracion: item.querySelector('.med-duracion').value,
+                    cantidad: item.querySelector('.med-cantidad').value,
+                    instrucciones: item.querySelector('.med-instrucciones').value
+                };
+
+                medicamentos.push(med);
+            });
+
+            return medicamentos;
+        }
+
+        // Asignar eventos
+        btnAgregarMedicamento.addEventListener('click', agregarMedicamento);
+
+        btnVistaPrevia.addEventListener('click', mostrarVistaPrevia);
+
+        // Gestionar envío del formulario
+        formReceta.addEventListener('submit', function (event) {
+            // Prevenir envío si no hay medicamentos
+            if (medicamentosCount === 0) {
+                event.preventDefault();
+                alert('Debe agregar al menos un medicamento a la receta.');
+                return;
+            }
+
+            // Prevenir envío si falta diagnóstico
+            const diagnostico = document.getElementById('diagnostico').value.trim();
+            if (!diagnostico) {
+                event.preventDefault();
+                alert('Debe ingresar un diagnóstico.');
+                return;
+            }
+
+            // Validar campos requeridos de medicamentos
+            const items = medicamentosContainer.querySelectorAll('.medicamento-item');
+            let isValid = true;
+
+            items.forEach((item) => {
+                const nombre = item.querySelector('.med-nombre').value.trim();
+                const dosis = item.querySelector('.med-dosis').value.trim();
+                const via = item.querySelector('.med-via').value.trim();
+                const frecuencia = item.querySelector('.med-frecuencia').value.trim();
+                const duracion = item.querySelector('.med-duracion').value.trim();
+
+                if (!nombre || !dosis || !via || !frecuencia || !duracion) {
+                    isValid = false;
+                }
+            });
+
+            if (!isValid) {
+                event.preventDefault();
+                alert('Por favor complete todos los campos requeridos de los medicamentos.');
+                return;
+            }
+
+            // Crear campo oculto para los medicamentos
+            const medicamentos = recopilarMedicamentos();
+            const hiddenField = document.createElement('input');
+            hiddenField.type = 'hidden';
+            hiddenField.name = 'medicamentos_json';
+            hiddenField.value = JSON.stringify(medicamentos);
+            formReceta.appendChild(hiddenField);
+        });
+
+        // Agregar un medicamento al inicio
+        agregarMedicamento();
+
+        // Si hay un diagnóstico precargado, mostrarlo
+        if ("{{ form.diagnostico.data }}") {
+            document.getElementById('diagnostico').value = "{{ form.diagnostico.data }}";
+        } else if ("{{ consulta.diagnostico }}") {
+            // Si no hay diagnóstico en el formulario pero sí en la consulta, usar ese
+            document.getElementById('diagnostico').value = "{{ consulta.diagnostico }}";
+        }
+    });
+                </script>
+{% endblock %}

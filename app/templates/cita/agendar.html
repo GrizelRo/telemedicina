@@ -1,0 +1,1066 @@
+{% extends "base.html" %}
+
+{% block title %}Agendar Cita - {{ app_name }}{% endblock %}
+
+{% block styles %}
+<style>
+    .wizard-step {
+        display: none;
+    }
+
+    .wizard-step.active {
+        display: block;
+    }
+
+    .step-indicator {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 30px;
+    }
+
+    .step {
+        flex: 1;
+        text-align: center;
+        position: relative;
+        padding: 10px;
+    }
+
+    .step-icon {
+        width: 50px;
+        height: 50px;
+        line-height: 50px;
+        border-radius: 50%;
+        background-color: #f8f9fa;
+        margin: 0 auto 10px;
+        position: relative;
+        z-index: 2;
+        color: #6c757d;
+        font-size: 20px;
+    }
+
+    .step.active .step-icon {
+        background-color: var(--color-primary);
+        color: white;
+    }
+
+    .step.completed .step-icon {
+        background-color: var(--color-confirmed);
+        color: white;
+    }
+
+    .step-title {
+        font-size: 0.9rem;
+        color: #6c757d;
+        font-weight: 500;
+    }
+
+    .step.active .step-title {
+        color: var(--color-primary);
+        font-weight: bold;
+    }
+
+    .step.completed .step-title {
+        color: var(--color-confirmed);
+    }
+
+    .step-connector {
+        position: absolute;
+        top: 25px;
+        height: 2px;
+        background-color: #e9ecef;
+        width: 100%;
+        left: 50%;
+        z-index: 1;
+    }
+
+    .step:last-child .step-connector {
+        display: none;
+    }
+
+    .btn-wizard-nav {
+        min-width: 120px;
+    }
+
+    .card-especialidad {
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .card-especialidad:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-especialidad.selected {
+        border: 2px solid var(--color-primary);
+        background-color: rgba(25, 118, 210, 0.05);
+    }
+
+    .card-medico {
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .card-medico:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-medico.selected {
+        border: 2px solid var(--color-primary);
+        background-color: rgba(25, 118, 210, 0.05);
+    }
+
+    .calendar-day {
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .calendar-day:hover {
+        background-color: rgba(25, 118, 210, 0.1);
+    }
+
+    .calendar-day.selected {
+        background-color: var(--color-primary);
+        color: white;
+    }
+
+    .calendar-day.unavailable {
+        color: #ccc;
+        cursor: not-allowed;
+    }
+
+    .time-slot {
+        cursor: pointer;
+        transition: all 0.3s ease;
+        padding: 8px 12px;
+        margin: 5px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+        display: inline-block;
+    }
+
+    .time-slot:hover {
+        background-color: rgba(25, 118, 210, 0.1);
+    }
+
+    .time-slot.selected {
+        background-color: var(--color-primary);
+        color: white;
+        border-color: var(--color-primary);
+    }
+
+    .time-slot.unavailable {
+        color: #ccc;
+        cursor: not-allowed;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h2 class="card-title">
+                    <i class="fas fa-calendar-plus text-primary"></i>
+                    Agendar Cita Médica
+                </h2>
+                <p class="card-text">
+                    Complete los siguientes pasos para agendar una consulta médica.
+                    Seleccione la especialidad, médico, fecha y horario de preferencia.
+                </p>
+
+                <!-- Indicador de pasos -->
+                <div class="step-indicator">
+                    <div class="step active" id="step1-indicator">
+                        <div class="step-icon">
+                            <i class="fas fa-stethoscope"></i>
+                        </div>
+                        <div class="step-title">Especialidad</div>
+                        <div class="step-connector"></div>
+                    </div>
+                    <div class="step" id="step2-indicator">
+                        <div class="step-icon">
+                            <i class="fas fa-hospital"></i>
+                        </div>
+                        <div class="step-title">Centro Médico</div>
+                        <div class="step-connector"></div>
+                    </div>
+                    <div class="step" id="step3-indicator">
+                        <div class="step-icon">
+                            <i class="fas fa-user-md"></i>
+                        </div>
+                        <div class="step-title">Médico</div>
+                        <div class="step-connector"></div>
+                    </div>
+                    <div class="step" id="step4-indicator">
+                        <div class="step-icon">
+                            <i class="fas fa-calendar-day"></i>
+                        </div>
+                        <div class="step-title">Fecha y Hora</div>
+                        <div class="step-connector"></div>
+                    </div>
+                    <div class="step" id="step5-indicator">
+                        <div class="step-icon">
+                            <i class="fas fa-clipboard-check"></i>
+                        </div>
+                        <div class="step-title">Confirmación</div>
+                    </div>
+                </div>
+
+                <!-- Formulario de cita -->
+                <form method="POST" action="{{ url_for('cita.agendar') }}" id="form-cita">
+                    {{ form.csrf_token }}
+
+                    <!-- Paso 1: Selección de especialidad -->
+                    <div class="wizard-step active" id="step1">
+                        <h4 class="mb-4">Seleccione una especialidad médica</h4>
+
+                        <div class="row" id="especialidades-container">
+                            <!-- Se llenará dinámicamente con JavaScript -->
+                            <div class="col-12 text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Cargando...</span>
+                                </div>
+                                <p>Cargando especialidades...</p>
+                            </div>
+                        </div>
+
+                        {{ form.especialidad_id(type="hidden") }}
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button type="button" class="btn btn-outline-secondary btn-wizard-nav" disabled>
+                                <i class="fas fa-arrow-left"></i> Anterior
+                            </button>
+                            <button type="button" id="btn-step1-next" class="btn btn-primary btn-wizard-nav" disabled>
+                                Siguiente <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Paso 2: Selección de centro médico -->
+                    <div class="wizard-step" id="step2">
+                        <h4 class="mb-4">Seleccione un centro médico</h4>
+
+                        <div class="row" id="centros-container">
+                            <!-- Se llenará dinámicamente con JavaScript -->
+                            <div class="col-12 text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Cargando...</span>
+                                </div>
+                                <p>Cargando centros médicos...</p>
+                            </div>
+                        </div>
+
+                        {{ form.centro_medico_id(type="hidden") }}
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button type="button" id="btn-step2-prev" class="btn btn-outline-secondary btn-wizard-nav">
+                                <i class="fas fa-arrow-left"></i> Anterior
+                            </button>
+                            <button type="button" id="btn-step2-next" class="btn btn-primary btn-wizard-nav" disabled>
+                                Siguiente <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Paso 3: Selección de médico -->
+                    <div class="wizard-step" id="step3">
+                        <h4 class="mb-4">Seleccione un médico</h4>
+
+                        <div class="row" id="medicos-container">
+                            <!-- Se llenará dinámicamente con JavaScript -->
+                            <div class="col-12 text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Cargando...</span>
+                                </div>
+                                <p>Cargando médicos disponibles...</p>
+                            </div>
+                        </div>
+
+                        {{ form.medico_id(type="hidden") }}
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button type="button" id="btn-step3-prev" class="btn btn-outline-secondary btn-wizard-nav">
+                                <i class="fas fa-arrow-left"></i> Anterior
+                            </button>
+                            <button type="button" id="btn-step3-next" class="btn btn-primary btn-wizard-nav" disabled>
+                                Siguiente <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Paso 4: Selección de fecha y hora -->
+                    <div class="wizard-step" id="step4">
+                        <h4 class="mb-4">Seleccione fecha y horario</h4>
+
+                        <div class="row">
+                            <div class="col-md-7">
+                                <div class="card shadow-sm">
+                                    <div class="card-header bg-primary text-white">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <button type="button" id="prev-month" class="btn btn-sm btn-outline-light">
+                                                <i class="fas fa-chevron-left"></i>
+                                            </button>
+                                            <h5 class="mb-0" id="month-year">Mes Año</h5>
+                                            <button type="button" id="next-month" class="btn btn-sm btn-outline-light">
+                                                <i class="fas fa-chevron-right"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <table class="table table-borderless" id="calendar">
+                                            <thead>
+                                                <tr>
+                                                    <th>Lu</th>
+                                                    <th>Ma</th>
+                                                    <th>Mi</th>
+                                                    <th>Ju</th>
+                                                    <th>Vi</th>
+                                                    <th>Sa</th>
+                                                    <th>Do</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <!-- Se llenará dinámicamente con JavaScript -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <div class="card shadow-sm">
+                                    <div class="card-header bg-primary text-white">
+                                        <h5 class="mb-0">Horarios Disponibles</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="horarios-container">
+                                            <p class="text-center text-muted">
+                                                <i class="fas fa-info-circle"></i>
+                                                Seleccione una fecha en el calendario
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{ form.fecha(type="hidden") }}
+                        {{ form.horario(type="hidden") }}
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button type="button" id="btn-step4-prev" class="btn btn-outline-secondary btn-wizard-nav">
+                                <i class="fas fa-arrow-left"></i> Anterior
+                            </button>
+                            <button type="button" id="btn-step4-next" class="btn btn-primary btn-wizard-nav" disabled>
+                                Siguiente <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Paso 5: Confirmación -->
+                    <div class="wizard-step" id="step5">
+                        <h4 class="mb-4">Confirmar información de la cita</h4>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="card shadow-sm">
+                                    <div class="card-header bg-primary text-white">
+                                        <h5 class="mb-0">Resumen de la Cita</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <h6><i class="fas fa-stethoscope"></i> Especialidad</h6>
+                                                <p id="resumen-especialidad">-</p>
+
+                                                <h6><i class="fas fa-hospital"></i> Centro Médico</h6>
+                                                <p id="resumen-centro">-</p>
+
+                                                <h6><i class="fas fa-user-md"></i> Médico</h6>
+                                                <p id="resumen-medico">-</p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6><i class="fas fa-calendar-alt"></i> Fecha</h6>
+                                                <p id="resumen-fecha">-</p>
+
+                                                <h6><i class="fas fa-clock"></i> Hora</h6>
+                                                <p id="resumen-hora">-</p>
+                                            </div>
+                                        </div>
+
+                                        <hr>
+
+                                        <div class="form-group">
+                                            <label for="tipo" class="form-label"><i class="fas fa-tag"></i> Tipo de
+                                                Consulta</label>
+                                            {{ form.tipo(class="form-control" + (" is-invalid" if form.tipo.errors else
+                                            "")) }}
+                                            {% if form.tipo.errors %}
+                                            <div class="invalid-feedback">
+                                                {% for error in form.tipo.errors %}
+                                                {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+
+                                        <div class="form-group mt-3">
+                                            <label for="motivo" class="form-label"><i
+                                                    class="fas fa-comment-medical"></i> Motivo de la Consulta</label>
+                                            {{ form.motivo(class="form-control" + (" is-invalid" if form.motivo.errors
+                                            else ""), rows=4) }}
+                                            {% if form.motivo.errors %}
+                                            <div class="invalid-feedback">
+                                                {% for error in form.motivo.errors %}
+                                                {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                            {% endif %}
+                                            <div class="form-text">
+                                                Por favor describa brevemente el motivo de su consulta para que el
+                                                médico pueda prepararse.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button type="button" id="btn-step5-prev" class="btn btn-outline-secondary btn-wizard-nav">
+                                <i class="fas fa-arrow-left"></i> Anterior
+                            </button>
+                            {{ form.submit(class="btn btn-success btn-wizard-nav") }}
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Variables globales
+        let currentStep = 1;
+        let especialidades = [];
+        let centrosMedicos = [];
+        let medicos = [];
+        let fechasDisponibles = [];
+        let horariosDisponibles = {};
+
+        // Elementos DOM
+        const especialidadesContainer = document.getElementById('especialidades-container');
+        const centrosContainer = document.getElementById('centros-container');
+        const medicosContainer = document.getElementById('medicos-container');
+        const horariosContainer = document.getElementById('horarios-container');
+        const calendarBody = document.querySelector('#calendar tbody');
+
+        // Campos ocultos del formulario
+        const especialidadInput = document.getElementById('especialidad_id');
+        const centroInput = document.getElementById('centro_medico_id');
+        const medicoInput = document.getElementById('medico_id');
+        const fechaInput = document.getElementById('fecha');
+        const horarioInput = document.getElementById('horario');
+
+        // Navegación entre pasos
+        function showStep(step) {
+            // Ocultar todos los pasos
+            document.querySelectorAll('.wizard-step').forEach(el => {
+                el.classList.remove('active');
+            });
+
+            // Mostrar el paso actual
+            document.getElementById(`step${step}`).classList.add('active');
+
+            // Actualizar indicadores de paso
+            document.querySelectorAll('.step').forEach((el, index) => {
+                if (index + 1 < step) {
+                    el.classList.add('completed');
+                    el.classList.remove('active');
+                } else if (index + 1 === step) {
+                    el.classList.add('active');
+                    el.classList.remove('completed');
+                } else {
+                    el.classList.remove('active', 'completed');
+                }
+            });
+
+            currentStep = step;
+        }
+
+        // Cargar especialidades al inicio
+        function cargarEspecialidades() {
+            especialidadesContainer.innerHTML = `
+                <div class="col-12 text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p>Cargando especialidades...</p>
+                </div>
+            `;
+
+            // Aquí simularemos la carga de especialidades 
+            // En producción, esto debería ser una llamada AJAX al backend
+            setTimeout(() => {
+                fetch('/api/especialidades')
+                    .then(response => response.json())
+                    .then(data => {
+                        especialidades = data.especialidades || [];
+                        mostrarEspecialidades();
+                    })
+                    .catch(error => {
+                        console.error('Error al cargar especialidades:', error);
+                        especialidadesContainer.innerHTML = `
+                            <div class="col-12 text-center">
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-triangle"></i> 
+                                    Error al cargar especialidades. Por favor intente nuevamente.
+                                </div>
+                            </div>
+                        `;
+                    });
+            }, 500);
+        }
+
+        function mostrarEspecialidades() {
+            if (!especialidades.length) {
+                especialidadesContainer.innerHTML = `
+                    <div class="col-12 text-center">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> 
+                            No hay especialidades disponibles en este momento.
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+
+            especialidades.forEach(especialidad => {
+                html += `
+                    <div class="col-md-4 col-sm-6 mb-4">
+                        <div class="card card-especialidad h-100 shadow-sm" data-id="${especialidad.id}">
+                            <div class="card-body text-center">
+                                <i class="fas fa-${especialidad.icono || 'stethoscope'} text-primary icon-large mb-3"></i>
+                                <h5 class="card-title">${especialidad.nombre}</h5>
+                                <p class="card-text small">${especialidad.descripcion || ''}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            especialidadesContainer.innerHTML = html;
+
+            // Agregar eventos a las tarjetas
+            document.querySelectorAll('.card-especialidad').forEach(card => {
+                card.addEventListener('click', function () {
+                    // Eliminar selección anterior
+                    document.querySelectorAll('.card-especialidad').forEach(c => {
+                        c.classList.remove('selected');
+                    });
+
+                    // Marcar como seleccionada
+                    this.classList.add('selected');
+
+                    // Guardar ID en campo oculto
+                    especialidadInput.value = this.dataset.id;
+
+                    // Habilitar botón siguiente
+                    document.getElementById('btn-step1-next').disabled = false;
+                });
+            });
+        }
+
+        // Cargar centros médicos
+        function cargarCentrosMedicos() {
+            centrosContainer.innerHTML = `
+                <div class="col-12 text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p>Cargando centros médicos...</p>
+                </div>
+            `;
+
+            // Aquí simularemos la carga de centros médicos
+            // En producción, esto debería ser una llamada AJAX al backend
+            setTimeout(() => {
+                fetch(`/cita/centros-por-especialidad/${especialidadInput.value}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        centrosMedicos = data.centros || [];
+                        mostrarCentrosMedicos();
+                    })
+                    .catch(error => {
+                        console.error('Error al cargar centros médicos:', error);
+                        centrosContainer.innerHTML = `
+                            <div class="col-12 text-center">
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-triangle"></i> 
+                                    Error al cargar centros médicos. Por favor intente nuevamente.
+                                </div>
+                            </div>
+                        `;
+                    });
+            }, 500);
+        }
+
+        function mostrarCentrosMedicos() {
+            if (!centrosMedicos.length) {
+                centrosContainer.innerHTML = `
+                    <div class="col-12 text-center">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> 
+                            No hay centros médicos disponibles para esta especialidad.
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+
+            centrosMedicos.forEach(centro => {
+                html += `
+                    <div class="col-md-6 mb-4">
+                        <div class="card card-centro h-100 shadow-sm" data-id="${centro.id}">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-hospital text-primary icon-large"></i>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h5 class="card-title">${centro.nombre}</h5>
+                                        <p class="card-text">
+                                            <i class="fas fa-map-marker-alt text-danger"></i> ${centro.direccion || 'Sin dirección'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            centrosContainer.innerHTML = html;
+
+            // Agregar eventos a las tarjetas
+            document.querySelectorAll('.card-centro').forEach(card => {
+                card.addEventListener('click', function () {
+                    // Eliminar selección anterior
+                    document.querySelectorAll('.card-centro').forEach(c => {
+                        c.classList.remove('selected');
+                    });
+
+                    // Marcar como seleccionada
+                    this.classList.add('selected');
+
+                    // Guardar ID en campo oculto
+                    centroInput.value = this.dataset.id;
+
+                    // Habilitar botón siguiente
+                    document.getElementById('btn-step2-next').disabled = false;
+                });
+            });
+        }
+
+        // Cargar médicos
+        function cargarMedicos() {
+            medicosContainer.innerHTML = `
+                <div class="col-12 text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p>Cargando médicos disponibles...</p>
+                </div>
+            `;
+
+            // Aquí simularemos la carga de médicos
+            // En producción, esto debería ser una llamada AJAX al backend
+            setTimeout(() => {
+                fetch(`/cita/medicos-por-centro/${especialidadInput.value}/${centroInput.value}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        medicos = data.medicos || [];
+                        mostrarMedicos();
+                    })
+                    .catch(error => {
+                        console.error('Error al cargar médicos:', error);
+                        medicosContainer.innerHTML = `
+                            <div class="col-12 text-center">
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-triangle"></i> 
+                                    Error al cargar médicos. Por favor intente nuevamente.
+                                </div>
+                            </div>
+                        `;
+                    });
+            }, 500);
+        }
+
+        function mostrarMedicos() {
+            if (!medicos.length) {
+                medicosContainer.innerHTML = `
+                    <div class="col-12 text-center">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> 
+                            No hay médicos disponibles para esta especialidad en el centro seleccionado.
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+
+            medicos.forEach(medico => {
+                html += `
+                    <div class="col-md-6 mb-4">
+                        <div class="card card-medico h-100 shadow-sm" data-id="${medico.id}">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-user-md text-primary icon-large"></i>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h5 class="card-title">Dr. ${medico.nombre}</h5>
+                                        <p class="card-text">
+                                            <span class="badge bg-primary">${medico.especialidad}</span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            medicosContainer.innerHTML = html;
+
+            // Agregar eventos a las tarjetas
+            document.querySelectorAll('.card-medico').forEach(card => {
+                card.addEventListener('click', function () {
+                    // Eliminar selección anterior
+                    document.querySelectorAll('.card-medico').forEach(c => {
+                        c.classList.remove('selected');
+                    });
+
+                    // Marcar como seleccionada
+                    this.classList.add('selected');
+
+                    // Guardar ID en campo oculto
+                    medicoInput.value = this.dataset.id;
+
+                    // Habilitar botón siguiente
+                    document.getElementById('btn-step3-next').disabled = false;
+                });
+            });
+        }
+
+        // Funciones para el calendario
+        let currentDate = new Date();
+
+        function generarCalendario(year, month) {
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+
+            // Actualizar título del calendario
+            document.getElementById('month-year').textContent =
+                firstDay.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+
+            // Limpiar calendario
+            calendarBody.innerHTML = '';
+
+            // Ajustar para que la semana empiece en lunes (0 = lunes, 6 = domingo)
+            let startDay = firstDay.getDay() - 1;
+            if (startDay === -1) startDay = 6;
+
+            let date = 1;
+            let html = '';
+
+            // Crear filas del calendario
+            for (let i = 0; i < 6; i++) {
+                let row = '<tr>';
+
+                // Crear celdas
+                for (let j = 0; j < 7; j++) {
+                    if (i === 0 && j < startDay) {
+                        // Celdas vacías antes del primer día
+                        row += '<td></td>';
+                    } else if (date > lastDay.getDate()) {
+                        // Celdas vacías después del último día
+                        row += '<td></td>';
+                    } else {
+                        // Días del mes
+                        const currentDateObj = new Date(year, month, date);
+                        const today = new Date();
+
+                        // Verificar si es hoy
+                        const isToday = currentDateObj.getDate() === today.getDate() &&
+                            currentDateObj.getMonth() === today.getMonth() &&
+                            currentDateObj.getFullYear() === today.getFullYear();
+
+                        // Verificar si es una fecha pasada
+                        const isPast = currentDateObj < today && !isToday;
+
+                        // Verificar si hay disponibilidad para esta fecha
+                        const formattedDate = currentDateObj.toISOString().split('T')[0];
+                        const isAvailable = fechasDisponibles.includes(formattedDate);
+
+                        // Clases para estilizar el día
+                        let classes = 'calendar-day text-center';
+                        if (isToday) classes += ' bg-light fw-bold';
+                        if (isPast || !isAvailable) classes += ' unavailable';
+
+                        row += `<td><div class="${classes}" data-date="${formattedDate}" ${(!isPast && isAvailable) ? 'role="button"' : ''}>${date}</div></td>`;
+                        date++;
+                    }
+                }
+
+                row += '</tr>';
+                html += row;
+
+                // Si ya pasamos el último día, terminar
+                if (date > lastDay.getDate()) break;
+            }
+
+            calendarBody.innerHTML = html;
+
+            // Agregar eventos a los días seleccionables
+            document.querySelectorAll('.calendar-day[role="button"]').forEach(day => {
+                day.addEventListener('click', function () {
+                    // Eliminar selección anterior
+                    document.querySelectorAll('.calendar-day').forEach(d => {
+                        d.classList.remove('selected');
+                    });
+
+                    // Marcar como seleccionado
+                    this.classList.add('selected');
+
+                    // Guardar fecha en campo oculto
+                    fechaInput.value = this.dataset.date;
+
+                    // Cargar horarios disponibles
+                    cargarHorarios(this.dataset.date);
+                });
+            });
+        }
+
+        function cargarHorarios(fecha) {
+            horariosContainer.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p>Cargando horarios disponibles...</p>
+                </div>
+            `;
+
+            // Aquí simularemos la carga de horarios
+            // En producción, esto debería ser una llamada AJAX al backend
+            setTimeout(() => {
+                fetch(`/cita/horarios-disponibles`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+                    },
+                    body: `medico_id=${medicoInput.value}&centro_id=${centroInput.value}&fecha=${fecha}`
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        horariosDisponibles[fecha] = data.horarios || [];
+                        mostrarHorarios(fecha);
+                    })
+                    .catch(error => {
+                        console.error('Error al cargar horarios:', error);
+                        horariosContainer.innerHTML = `
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle"></i> 
+                                Error al cargar horarios. Por favor intente nuevamente.
+                            </div>
+                        `;
+                    });
+            }, 500);
+        }
+
+        function mostrarHorarios(fecha) {
+            const horarios = horariosDisponibles[fecha] || [];
+
+            if (!horarios.length) {
+                horariosContainer.innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 
+                        No hay horarios disponibles para la fecha seleccionada.
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '<div class="d-flex flex-wrap justify-content-center">';
+
+            horarios.forEach(horario => {
+                html += `
+                    <div class="time-slot" data-time="${horario}">
+                        ${horario}
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+
+            horariosContainer.innerHTML = html;
+
+            // Agregar eventos a los horarios
+            document.querySelectorAll('.time-slot').forEach(slot => {
+                slot.addEventListener('click', function () {
+                    // Eliminar selección anterior
+                    document.querySelectorAll('.time-slot').forEach(s => {
+                        s.classList.remove('selected');
+                    });
+
+                    // Marcar como seleccionado
+                    this.classList.add('selected');
+
+                    // Guardar horario en campo oculto
+                    horarioInput.value = this.dataset.time;
+
+                    // Habilitar botón siguiente
+                    document.getElementById('btn-step4-next').disabled = false;
+                });
+            });
+        }
+
+        function actualizarResumen() {
+            // Buscar nombre de especialidad
+            const especialidad = especialidades.find(e => e.id == especialidadInput.value);
+            document.getElementById('resumen-especialidad').textContent =
+                especialidad ? especialidad.nombre : '-';
+
+            // Buscar nombre de centro médico
+            const centro = centrosMedicos.find(c => c.id == centroInput.value);
+            document.getElementById('resumen-centro').textContent =
+                centro ? centro.nombre : '-';
+
+            // Buscar nombre de médico
+            const medico = medicos.find(m => m.id == medicoInput.value);
+            document.getElementById('resumen-medico').textContent =
+                medico ? 'Dr. ' + medico.nombre : '-';
+
+            // Fecha formateada
+            if (fechaInput.value) {
+                const fecha = new Date(fechaInput.value);
+                document.getElementById('resumen-fecha').textContent =
+                    fecha.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            } else {
+                document.getElementById('resumen-fecha').textContent = '-';
+            }
+
+            // Hora
+            document.getElementById('resumen-hora').textContent =
+                horarioInput.value || '-';
+        }
+
+        // Cargar fechas disponibles
+        function cargarFechasDisponibles() {
+            // Aquí simularemos la carga de fechas disponibles
+            // En producción, esto debería ser una llamada AJAX al backend
+
+            // Por ahora, consideraremos disponibles todas las fechas futuras en un rango de 3 meses
+            const today = new Date();
+            const endDate = new Date();
+            endDate.setMonth(today.getMonth() + 3);
+
+            let current = new Date(today);
+            while (current <= endDate) {
+                // Saltamos domingos para este ejemplo
+                if (current.getDay() !== 0) {
+                    fechasDisponibles.push(current.toISOString().split('T')[0]);
+                }
+                current.setDate(current.getDate() + 1);
+            }
+
+            // Generar calendario inicial
+            generarCalendario(currentDate.getFullYear(), currentDate.getMonth());
+        }
+
+        // Asignar eventos a los botones de navegación
+        document.getElementById('btn-step1-next').addEventListener('click', function () {
+            if (!especialidadInput.value) {
+                alert('Por favor seleccione una especialidad');
+                return;
+            }
+
+            cargarCentrosMedicos();
+            showStep(2);
+        });
+
+        document.getElementById('btn-step2-prev').addEventListener('click', function () {
+            showStep(1);
+        });
+
+        document.getElementById('btn-step2-next').addEventListener('click', function () {
+            if (!centroInput.value) {
+                alert('Por favor seleccione un centro médico');
+                return;
+            }
+
+            cargarMedicos();
+            showStep(3);
+        });
+
+        document.getElementById('btn-step3-prev').addEventListener('click', function () {
+            showStep(2);
+        });
+
+        document.getElementById('btn-step3-next').addEventListener('click', function () {
+            if (!medicoInput.value) {
+                alert('Por favor seleccione un médico');
+                return;
+            }
+
+            cargarFechasDisponibles();
+            showStep(4);
+        });
+
+        document.getElementById('btn-step4-prev').addEventListener('click', function () {
+            showStep(3);
+        });
+
+        document.getElementById('btn-step4-next').addEventListener('click', function () {
+            if (!fechaInput.value || !horarioInput.value) {
+                alert('Por favor seleccione fecha y hora');
+                return;
+            }
+
+            actualizarResumen();
+            showStep(5);
+        });
+
+        document.getElementById('btn-step5-prev').addEventListener('click', function () {
+            showStep(4);
+        });
+
+        // Navegación del calendario
+        document.getElementById('prev-month').addEventListener('click', function () {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            generarCalendario(currentDate.getFullYear(), currentDate.getMonth());
+        });
+
+        document.getElementById('next-month').addEventListener('click', function () {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            generarCalendario(currentDate.getFullYear(), currentDate.getMonth());
+        });
+
+        // Iniciar el proceso
+        cargarEspecialidades();
+    });
+</script>
+{% endblock %}

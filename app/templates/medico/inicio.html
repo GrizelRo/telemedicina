@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block title %}Panel del Médico - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h2 class="card-title">
+                    <i class="fas fa-user-md text-primary"></i>
+                    Bienvenido(a), Dr. {{ current_user.nombre }}
+                </h2>
+                <p class="card-text">
+                    En su panel de médico puede gestionar sus citas, realizar consultas virtuales, emitir documentos
+                    médicos y
+                    acceder al historial clínico de sus pacientes.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Estadísticas -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-calendar-check text-primary icon-large mb-3"></i>
+                <h3 class="card-title">{{ total_citas }}</h3>
+                <p class="card-text">Citas Totales</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-clipboard-check text-success icon-large mb-3"></i>
+                <h3 class="card-title">{{ citas_completadas }}</h3>
+                <p class="card-text">Consultas Realizadas</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-file-prescription text-info icon-large mb-3"></i>
+                <h3 class="card-title">{{ total_recetas }}</h3>
+                <p class="card-text">Recetas Emitidas</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-user-injured text-warning icon-large mb-3"></i>
+                <h3 class="card-title">{{ total_consultas }}</h3>
+                <p class="card-text">Pacientes Atendidos</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <!-- Acciones rápidas -->
+    <div class="col-md-12 mb-4">
+        <div class="row">
+            <div class="col-sm-6 col-md-3 mb-3">
+                <a href="{{ url_for('cita.registrar_disponibilidad') }}" class="text-decoration-none">
+                    <div class="card h-100 border-0 shadow-sm text-center">
+                        <div class="card-body">
+                            <i class="fas fa-calendar-plus text-primary icon-large mb-3"></i>
+                            <h5 class="card-title">Registrar Disponibilidad</h5>
+                            <p class="card-text">Configure sus horarios de atención</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-sm-6 col-md-3 mb-3">
+                <a href="{{ url_for('medico.citas') }}" class="text-decoration-none">
+                    <div class="card h-100 border-0 shadow-sm text-center">
+                        <div class="card-body">
+                            <i class="fas fa-calendar-check text-primary icon-large mb-3"></i>
+                            <h5 class="card-title">Mis Citas</h5>
+                            <p class="card-text">Revise y gestione sus citas programadas</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-sm-6 col-md-3 mb-3">
+                <a href="{{ url_for('medico.pacientes') }}" class="text-decoration-none">
+                    <div class="card h-100 border-0 shadow-sm text-center">
+                        <div class="card-body">
+                            <i class="fas fa-users text-primary icon-large mb-3"></i>
+                            <h5 class="card-title">Mis Pacientes</h5>
+                            <p class="card-text">Acceda a la información de sus pacientes</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-sm-6 col-md-3 mb-3">
+                <a href="{{ url_for('medico.consultas') }}" class="text-decoration-none">
+                    <div class="card h-100 border-0 shadow-sm text-center">
+                        <div class="card-body">
+                            <i class="fas fa-stethoscope text-primary icon-large mb-3"></i>
+                            <h5 class="card-title">Consultas</h5>
+                            <p class="card-text">Gestione sus consultas médicas</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Citas de hoy -->
+    <div class="col-lg-7 mb-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-calendar-day"></i> Citas de Hoy
+                </h5>
+                <span class="badge bg-light text-primary">{{ citas_hoy|length }} citas</span>
+            </div>
+            <div class="card-body">
+                {% if citas_hoy %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Hora</th>
+                                <th>Paciente</th>
+                                <th>Motivo</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cita in citas_hoy %}
+                            <tr>
+                                <td>{{ cita.fecha_hora.strftime('%H:%M') }}</td>
+                                <td>{{ cita.paciente.usuario.nombre_completo }}</td>
+                                <td>{{ cita.motivo|truncate(30) }}</td>
+                                <td>
+                                    {% if cita.estado == 'pendiente' %}
+                                    <span class="badge bg-warning">Pendiente</span>
+                                    {% elif cita.estado == 'confirmada' %}
+                                    <span class="badge bg-success">Confirmada</span>
+                                    {% elif cita.estado == 'en_curso' %}
+                                    <span class="badge bg-primary">En curso</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('cita.detalle', cita_id=cita.id) }}"
+                                            class="btn btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if cita.estado == 'pendiente' %}
+                                        <form action="{{ url_for('cita.confirmar', cita_id=cita.id) }}" method="POST"
+                                            class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                                            <button type="submit" class="btn btn-outline-success">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+
+                                        {% if cita.estado == 'confirmada' and cita.sala_virtual %}
+                                        <a href="{{ url_for('cita.iniciar_sala', cita_id=cita.id) }}"
+                                            class="btn btn-outline-primary">
+                                            <i class="fas fa-video"></i>
+                                        </a>
+                                        {% endif %}
+
+                                        {% if cita.puede_cancelar %}
+                                        <a href="{{ url_for('cita.cancelar', cita_id=cita.id) }}"
+                                            class="btn btn-outline-danger">
+                                            <i class="fas fa-times"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-3">
+                    <a href="{{ url_for('medico.citas') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-list"></i> Ver todas mis citas
+                    </a>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No tiene citas programadas para hoy.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Consultas pendientes -->
+    <div class="col-lg-5 mb-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-clipboard-list"></i> Consultas Pendientes
+                </h5>
+                <span class="badge bg-light text-primary">{{ consultas_pendientes|length }} consultas</span>
+            </div>
+            <div class="card-body">
+                {% if consultas_pendientes %}
+                <div class="list-group list-group-flush">
+                    {% for consulta in consultas_pendientes %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-0">{{ consulta.cita.fecha_hora|fecha_hora_formato }}</h6>
+                                <div class="text-muted">{{ consulta.cita.paciente.usuario.nombre_completo }}</div>
+                                {% if consulta.motivo_consulta %}
+                                <small>{{ consulta.motivo_consulta|truncate(50) }}</small>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <a href="{{ url_for('consulta.registrar', consulta_id=consulta.id) }}"
+                                    class="btn btn-primary btn-sm">
+                                    <i class="fas fa-edit"></i> Completar
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="mt-3">
+                    <a href="{{ url_for('medico.consultas', estado='pendientes') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-clipboard-list"></i> Ver todas las consultas pendientes
+                    </a>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No tiene consultas pendientes por completar.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Próximas citas -->
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-calendar-week"></i> Próximas Citas
+                </h5>
+                <span class="badge bg-light text-primary">{{ citas_proximas|length }} citas</span>
+            </div>
+            <div class="card-body">
+                {% if citas_proximas %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Hora</th>
+                                <th>Paciente</th>
+                                <th>Centro Médico</th>
+                                <th>Motivo</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cita in citas_proximas %}
+                            <tr>
+                                <td>{{ cita.fecha_hora|fecha_formato }}</td>
+                                <td>{{ cita.fecha_hora.strftime('%H:%M') }}</td>
+                                <td>{{ cita.paciente.usuario.nombre_completo }}</td>
+                                <td>{{ cita.centro_medico.nombre }}</td>
+                                <td>{{ cita.motivo|truncate(30) }}</td>
+                                <td>
+                                    {% if cita.estado == 'pendiente' %}
+                                    <span class="badge bg-warning">Pendiente</span>
+                                    {% elif cita.estado == 'confirmada' %}
+                                    <span class="badge bg-success">Confirmada</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('cita.detalle', cita_id=cita.id) }}"
+                                            class="btn btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if cita.estado == 'pendiente' %}
+                                        <form action="{{ url_for('cita.confirmar', cita_id=cita.id) }}" method="POST"
+                                            class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                                            <button type="submit" class="btn btn-outline-success">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+
+                                        {% if cita.puede_cancelar %}
+                                        <a href="{{ url_for('cita.cancelar', cita_id=cita.id) }}"
+                                            class="btn btn-outline-danger">
+                                            <i class="fas fa-times"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-3">
+                    <a href="{{ url_for('medico.citas') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-list"></i> Ver todas mis citas
+                    </a>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No tiene próximas citas programadas.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

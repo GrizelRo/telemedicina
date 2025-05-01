@@ -1,0 +1,430 @@
+{% extends "base.html" %}
+
+{% block title %}Registro de Paciente - {{ app_name }}{% endblock %}
+
+{% block styles %}
+<style>
+    .form-group-icon {
+        position: relative;
+    }
+
+    .form-group-icon i {
+        position: absolute;
+        top: 40px;
+        left: 10px;
+        color: var(--color-primary);
+    }
+
+    .form-group-icon input,
+    .form-group-icon select,
+    .form-group-icon textarea {
+        padding-left: 35px;
+    }
+
+    .required-field::after {
+        content: " *";
+        color: red;
+    }
+
+    /* Simplificación en móviles */
+    @media (max-width: 768px) {
+        .card-title {
+            font-size: 1.5rem;
+        }
+
+        .btn-lg {
+            font-size: 1.1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-9">
+        <div class="card shadow-sm border-0 rounded-lg mt-4 mb-4">
+            <div class="card-header bg-primary text-white text-center">
+                <h3 class="mb-0">Registro de Paciente</h3>
+                <p class="text-white-50 mb-0">Complete el formulario para crear su cuenta en la plataforma</p>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('auth.registro_paciente') }}">
+                    {{ form.csrf_token }}
+
+                    <div class="row">
+                        <div class="col-12 mb-4">
+                            <h4><i class="fas fa-user"></i> Información Personal</h4>
+                            <hr>
+                        </div>
+
+                        <!-- Primera columna -->
+                        <div class="col-md-6">
+                            <div class="mb-3 form-group-icon">
+                                <label for="tipo_documento" class="form-label required-field">Tipo de Documento</label>
+                                <i class="fas fa-id-card"></i>
+                                {{ form.tipo_documento(class="form-control" + (" is-invalid" if
+                                form.tipo_documento.errors else "")) }}
+                                {% if form.tipo_documento.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.tipo_documento.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3 form-group-icon">
+                                <label for="numero_documento" class="form-label required-field">Número de
+                                    Documento</label>
+                                <i class="fas fa-fingerprint"></i>
+                                {{ form.numero_documento(class="form-control" + (" is-invalid" if
+                                form.numero_documento.errors else ""), placeholder="Ej: 12345678") }}
+                                {% if form.numero_documento.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.numero_documento.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3 form-group-icon">
+                                <label for="nombre" class="form-label required-field">Nombres</label>
+                                <i class="fas fa-user"></i>
+                                {{ form.nombre(class="form-control" + (" is-invalid" if form.nombre.errors else ""),
+                                placeholder="Ej: Juan Pedro") }}
+                                {% if form.nombre.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.nombre.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3 form-group-icon">
+                                <label for="apellido" class="form-label required-field">Apellidos</label>
+                                <i class="fas fa-user"></i>
+                                {{ form.apellido(class="form-control" + (" is-invalid" if form.apellido.errors else ""),
+                                placeholder="Ej: González Pérez") }}
+                                {% if form.apellido.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.apellido.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Segunda columna -->
+                        <div class="col-md-6">
+                            <div class="mb-3 form-group-icon">
+                                <label for="fecha_nacimiento" class="form-label required-field">Fecha de
+                                    Nacimiento</label>
+                                <i class="fas fa-calendar-alt"></i>
+                                {{ form.fecha_nacimiento(class="form-control" + (" is-invalid" if
+                                form.fecha_nacimiento.errors else ""), type="date") }}
+                                {% if form.fecha_nacimiento.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.fecha_nacimiento.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3 form-group-icon">
+                                <label for="genero" class="form-label required-field">Género</label>
+                                <i class="fas fa-venus-mars"></i>
+                                {{ form.genero(class="form-control" + (" is-invalid" if form.genero.errors else "")) }}
+                                {% if form.genero.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.genero.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3 form-group-icon">
+                                <label for="email" class="form-label required-field">Correo Electrónico</label>
+                                <i class="fas fa-envelope"></i>
+                                {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else ""),
+                                placeholder="Ej: usuario@correo.com") }}
+                                {% if form.email.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.email.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3 form-group-icon">
+                                <label for="telefono" class="form-label">Teléfono</label>
+                                <i class="fas fa-phone"></i>
+                                {{ form.telefono(class="form-control" + (" is-invalid" if form.telefono.errors else ""),
+                                placeholder="Ej: 0991234567") }}
+                                {% if form.telefono.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.telefono.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Dirección (ancho completo) -->
+                        <div class="col-12">
+                            <div class="mb-3 form-group-icon">
+                                <label for="direccion" class="form-label">Dirección</label>
+                                <i class="fas fa-home"></i>
+                                {{ form.direccion(class="form-control" + (" is-invalid" if form.direccion.errors else
+                                ""), placeholder="Ej: Calle Principal 123") }}
+                                {% if form.direccion.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.direccion.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Ciudad y Departamento -->
+                        <div class="col-md-6">
+                            <div class="mb-3 form-group-icon">
+                                <label for="ciudad" class="form-label">Ciudad</label>
+                                <i class="fas fa-city"></i>
+                                {{ form.ciudad(class="form-control" + (" is-invalid" if form.ciudad.errors else ""),
+                                placeholder="Ej: Asunción") }}
+                                {% if form.ciudad.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.ciudad.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3 form-group-icon">
+                                <label for="departamento" class="form-label">Departamento</label>
+                                <i class="fas fa-map-marker-alt"></i>
+                                {{ form.departamento(class="form-control" + (" is-invalid" if form.departamento.errors
+                                else ""), placeholder="Ej: Central") }}
+                                {% if form.departamento.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.departamento.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Información médica -->
+                        <div class="col-12 mt-4 mb-3">
+                            <h4><i class="fas fa-notes-medical"></i> Información Médica Básica</h4>
+                            <p class="text-muted small">Esta información ayudará a los profesionales médicos durante las
+                                consultas. Es opcional pero recomendada.</p>
+                            <hr>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3 form-group-icon">
+                                <label for="grupo_sanguineo" class="form-label">Grupo Sanguíneo</label>
+                                <i class="fas fa-tint"></i>
+                                {{ form.grupo_sanguineo(class="form-control" + (" is-invalid" if
+                                form.grupo_sanguineo.errors else "")) }}
+                                {% if form.grupo_sanguineo.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.grupo_sanguineo.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3 form-group-icon">
+                                <label for="alergias" class="form-label">Alergias</label>
+                                <i class="fas fa-allergies"></i>
+                                {{ form.alergias(class="form-control" + (" is-invalid" if form.alergias.errors else ""),
+                                rows="3", placeholder="Indique si tiene alergias a medicamentos, alimentos, etc.") }}
+                                {% if form.alergias.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.alergias.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3 form-group-icon">
+                                <label for="enfermedades_cronicas" class="form-label">Enfermedades Crónicas</label>
+                                <i class="fas fa-heartbeat"></i>
+                                {{ form.enfermedades_cronicas(class="form-control" + (" is-invalid" if
+                                form.enfermedades_cronicas.errors else ""), rows="3", placeholder="Diabetes,
+                                hipertensión, asma, etc.") }}
+                                {% if form.enfermedades_cronicas.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.enfermedades_cronicas.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Contacto de emergencia -->
+                        <div class="col-12 mt-4 mb-3">
+                            <h4><i class="fas fa-ambulance"></i> Contacto de Emergencia</h4>
+                            <hr>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3 form-group-icon">
+                                <label for="contacto_emergencia_nombre" class="form-label">Nombre del Contacto</label>
+                                <i class="fas fa-user-friends"></i>
+                                {{ form.contacto_emergencia_nombre(class="form-control" + (" is-invalid" if
+                                form.contacto_emergencia_nombre.errors else ""), placeholder="Ej: María López") }}
+                                {% if form.contacto_emergencia_nombre.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.contacto_emergencia_nombre.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3 form-group-icon">
+                                <label for="contacto_emergencia_telefono" class="form-label">Teléfono del
+                                    Contacto</label>
+                                <i class="fas fa-phone"></i>
+                                {{ form.contacto_emergencia_telefono(class="form-control" + (" is-invalid" if
+                                form.contacto_emergencia_telefono.errors else ""), placeholder="Ej: 0991234567") }}
+                                {% if form.contacto_emergencia_telefono.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.contacto_emergencia_telefono.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3 form-group-icon">
+                                <label for="contacto_emergencia_relacion" class="form-label">Relación con el
+                                    Contacto</label>
+                                <i class="fas fa-people-arrows"></i>
+                                {{ form.contacto_emergencia_relacion(class="form-control" + (" is-invalid" if
+                                form.contacto_emergencia_relacion.errors else ""), placeholder="Ej: Cónyuge, Padre,
+                                Hermana") }}
+                                {% if form.contacto_emergencia_relacion.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.contacto_emergencia_relacion.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Contraseña y confirmación -->
+                        <div class="col-12 mt-4 mb-3">
+                            <h4><i class="fas fa-lock"></i> Seguridad de la Cuenta</h4>
+                            <hr>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3 form-group-icon">
+                                <label for="password" class="form-label required-field">Contraseña</label>
+                                <i class="fas fa-lock"></i>
+                                {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else ""),
+                                placeholder="Mínimo 8 caracteres") }}
+                                {% if form.password.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.password.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                <div class="form-text">La contraseña debe tener al menos 8 caracteres.</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3 form-group-icon">
+                                <label for="confirmar_password" class="form-label required-field">Confirmar
+                                    Contraseña</label>
+                                <i class="fas fa-lock"></i>
+                                {{ form.confirmar_password(class="form-control" + (" is-invalid" if
+                                form.confirmar_password.errors else ""), placeholder="Repita su contraseña") }}
+                                {% if form.confirmar_password.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.confirmar_password.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Términos y condiciones -->
+                        <div class="col-12 mt-3">
+                            <div class="mb-3 form-check">
+                                {{ form.aceptar_terminos(class="form-check-input" + (" is-invalid" if
+                                form.aceptar_terminos.errors else "")) }}
+                                <label class="form-check-label required-field" for="aceptar_terminos">
+                                    Acepto los <a href="{{ url_for('main.terminos') }}" target="_blank">términos y
+                                        condiciones</a>
+                                    y la <a href="{{ url_for('main.privacidad') }}" target="_blank">política de
+                                        privacidad</a>.
+                                </label>
+                                {% if form.aceptar_terminos.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.aceptar_terminos.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Botón de registro -->
+                        <div class="col-12 mt-4">
+                            <div class="d-grid gap-2">
+                                {{ form.submit(class="btn btn-primary btn-lg") }}
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-center py-3">
+                <div class="small">
+                    <a href="{{ url_for('auth.login') }}">
+                        <i class="fas fa-sign-in-alt"></i> ¿Ya tiene una cuenta? Inicie sesión
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Leyenda de campos requeridos -->
+<div class="row">
+    <div class="col-12 text-center mb-4">
+        <small class="text-muted">
+            Los campos marcados con <span class="text-danger">*</span> son obligatorios.
+        </small>
+    </div>
+</div>
+{% endblock %}
