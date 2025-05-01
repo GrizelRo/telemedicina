@@ -1,6 +1,7 @@
-from flask import Blueprint, render_template, redirect, url_for, request, current_app
+from flask import Blueprint, render_template, redirect, url_for, request, current_app, abort
 from flask_login import current_user
-from app.models.tipos_usuario import Especialidad, CentroMedico, Medico
+from app.models.tipos_usuario import Especialidad, Medico
+from app.models.centro_medico import CentroMedico
 
 # Crear blueprint principal
 main_bp = Blueprint('main', __name__)

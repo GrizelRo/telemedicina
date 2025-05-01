@@ -31,12 +31,14 @@ def create_app(config_name=None):
     # Inicializar Babel para internacionalización
     babel = Babel(app)
     
-    # Usar select_locale en lugar de localeselector
-    @babel.select_locale
+    # Definir la función para seleccionar el idioma
     def get_locale():
         """Selecciona el idioma para la interfaz."""
         # Por defecto, usar español
         return 'es'
+    
+    # Configurar Babel para usar la función get_locale
+    babel.init_app(app, locale_selector=get_locale)
     
     # Registrar blueprints
     register_blueprints(app)

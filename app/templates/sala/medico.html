@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Sala Virtual - Médico - {{ app_name }}{% endblock %}
+
+{% block styles %}
+<style>
+    /* Pantalla completa de la sala */
+    .sala-container {
+        height: calc(100vh - 56px);
+        background-color: #f8f9fa;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Barra superior con información */
+    .sala-header {
+        background-color: var(--color-primary);
+        color: white;
+        padding: 10px 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    /* Contenedor principal de video y chat */
+    .sala-content {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+    }
+
+    /* Área de video */
+    .video-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background-color: #333;
+        position: relative;
+    }
+
+    /* Videos de participantes */
+    .video-grid {
+        flex: 1;
+        display: flex;
+        flex-wrap: wrap;
+        align-content: center;
+        justify-content: center;
+        overflow: hidden;
+    }
+
+    .video-participante {
+        position: relative;
+        margin: 5px;
+        border-radius: 8px;
+        overflow: hidden;
+        background-color: #222;
+    }
+
+    .video-grande {
+        width: 100%;
+        max-height: calc(100% - 150px);
+    }
+
+    .video-pequeno {
+        position: absolute;
+        width: 200px;
+        height: 150px;
+        right: 20px;
+        bottom: 20px;
+        border: 2px solid white;
+    }
+
+    video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* Controles de video */
+    .video-controls {
+        background-color: rgba(0, 0, 0, 0.7);
+        padding: 10px;
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+    }
+
+    .control-btn {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .control-btn:hover {
+        transform: scale(1.1);
+    }
+
+    .btn-mic {
+        background-color: #3498db;
+        color: white;
+    }
+
+    .btn-mic.muted {
+        background-color: #e74c3c;
+    }
+
+    .btn-video {
+        background-color: #3498db;
+        color: white;
+    }
+
+    .btn-video.off {
+        background-color: #e74c3c;
+    }
+
+    .btn-end {
+        background-color: #e74c3c;
+        color: white;
+    }
+
+    /* Panel lateral para chat e información */
+    .side-panel {
+        width: 350px;
+        display: flex;
+        flex-direction: column;
+        border-left: 1px solid #ddd;
+        background-color: white;
+    }
+
+    .panel-tabs {
+        display: flex;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .panel-tab {
+        flex: 1;
+        text-align: center;
+        padding: 10px;
+        cursor: pointer;
+        background-color: #f8f9fa;
+        transition: all 0.3s ease;
+    }
+
+    .panel-tab.active {
+        background-color: white;
+        border-bottom:
