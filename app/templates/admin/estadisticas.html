@@ -1,0 +1,475 @@
+{% extends "base.html" %}
+
+{% block title %}Estadísticas del Sistema - {{ app_name }}{% endblock %}
+
+{% block styles %}
+<style>
+    .stats-card {
+        transition: all 0.3s ease;
+    }
+
+    .stats-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .stats-icon {
+        font-size: 2.5rem;
+        color: var(--color-primary);
+        margin-bottom: 15px;
+    }
+
+    .stats-value {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    .stats-label {
+        color: var(--color-text-secondary);
+    }
+
+    .chart-container {
+        height: 300px;
+        position: relative;
+    }
+
+    .table-stats th {
+        background-color: var(--color-primary);
+        color: white;
+    }
+
+    .progress {
+        height: 10px;
+    }
+
+    .date-range-selector {
+        display: flex;
+        align-items: center;
+        justify-content: end;
+        margin-bottom: 20px;
+    }
+
+    .date-range-selector label {
+        margin-right: 10px;
+        margin-bottom: 0;
+    }
+
+    .date-range-selector select {
+        width: auto;
+    }
+
+    .chart-title {
+        font-size: 1.2rem;
+        font-weight: 500;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+</style>
+<!-- Incluir Chart.js para gráficos -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('admin.inicio') }}">Inicio</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Estadísticas</li>
+            </ol>
+        </nav>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-chart-bar"></i> Estadísticas del Sistema
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="date-range-selector">
+                    <label for="date-range">Rango de fechas:</label>
+                    <select class="form-select" id="date-range">
+                        <option value="7">Últimos 7 días</option>
+                        <option value="30" selected>Últimos 30 días</option>
+                        <option value="90">Últimos 3 meses</option>
+                        <option value="180">Últimos 6 meses</option>
+                        <option value="365">Último año</option>
+                    </select>
+                </div>
+
+                <!-- Resumen general -->
+                <div class="row mb-4">
+                    <div class="col-lg-3 col-md-6 mb-4">
+                        <div class="card stats-card h-100 border-0 shadow-sm">
+                            <div class="card-body text-center">
+                                <i class="fas fa-users stats-icon"></i>
+                                <div class="stats-value">{{ total_usuarios }}</div>
+                                <div class="stats-label">Usuarios Registrados</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-4">
+                        <div class="card stats-card h-100 border-0 shadow-sm">
+                            <div class="card-body text-center">
+                                <i class="fas fa-user-md stats-icon"></i>
+                                <div class="stats-value">{{ total_medicos }}</div>
+                                <div class="stats-label">Médicos</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-4">
+                        <div class="card stats-card h-100 border-0 shadow-sm">
+                            <div class="card-body text-center">
+                                <i class="fas fa-hospital stats-icon"></i>
+                                <div class="stats-value">{{ total_centros }}</div>
+                                <div class="stats-label">Centros Médicos</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-4">
+                        <div class="card stats-card h-100 border-0 shadow-sm">
+                            <div class="card-body text-center">
+                                <i class="fas fa-calendar-check stats-icon"></i>
+                                <div class="stats-value">{{ total_citas }}</div>
+                                <div class="stats-label">Citas Totales</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Distribución de citas por estado -->
+                <div class="row mb-4">
+                    <div class="col-lg-6 mb-4">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-header">
+                                <h5 class="mb-0">Distribución de Citas por Estado</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="citasEstadoChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 mb-4">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-header">
+                                <h5 class="mb-0">Actividad Mensual</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="actividadMensualChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráficos de tendencias -->
+                <div class="row mb-4">
+                    <div class="col-lg-6 mb-4">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-header">
+                                <h5 class="mb-0">Nuevos Usuarios por Día</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="nuevosUsuariosChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 mb-4">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-header">
+                                <h5 class="mb-0">Citas por Día</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="citasPorDiaChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estadísticas por especialidad -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card shadow-sm">
+                            <div class="card-header">
+                                <h5 class="mb-0">Estadísticas por Especialidad</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-stats">
+                                        <thead>
+                                            <tr>
+                                                <th>Especialidad</th>
+                                                <th>Médicos</th>
+                                                <th>Citas</th>
+                                                <th>Distribución</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for estadistica in estadisticas_especialidad %}
+                                            <tr>
+                                                <td>{{ estadistica.especialidad.nombre }}</td>
+                                                <td>{{ estadistica.medicos }}</td>
+                                                <td>{{ estadistica.citas }}</td>
+                                                <td>
+                                                    {% set porcentaje = (estadistica.citas / total_citas * 100)|round if
+                                                    total_citas > 0 else 0 %}
+                                                    <div class="progress">
+                                                        <div class="progress-bar bg-primary" role="progressbar"
+                                                            style="width: {{ porcentaje }}%"
+                                                            aria-valuenow="{{ porcentaje }}" aria-valuemin="0"
+                                                            aria-valuemax="100"></div>
+                                                    </div>
+                                                    <small class="text-muted">{{ porcentaje }}%</small>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estadísticas por centro médico -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card shadow-sm">
+                            <div class="card-header">
+                                <h5 class="mb-0">Estadísticas por Centro Médico</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-stats">
+                                        <thead>
+                                            <tr>
+                                                <th>Centro Médico</th>
+                                                <th>Médicos</th>
+                                                <th>Especialidades</th>
+                                                <th>Citas</th>
+                                                <th>Distribución</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for estadistica in estadisticas_centro %}
+                                            <tr>
+                                                <td>{{ estadistica.centro.nombre }}</td>
+                                                <td>{{ estadistica.medicos }}</td>
+                                                <td>{{ estadistica.centro.especialidades|length }}</td>
+                                                <td>{{ estadistica.citas }}</td>
+                                                <td>
+                                                    {% set porcentaje = (estadistica.citas / total_citas * 100)|round if
+                                                    total_citas > 0 else 0 %}
+                                                    <div class="progress">
+                                                        <div class="progress-bar bg-primary" role="progressbar"
+                                                            style="width: {{ porcentaje }}%"
+                                                            aria-valuenow="{{ porcentaje }}" aria-valuemin="0"
+                                                            aria-valuemax="100"></div>
+                                                    </div>
+                                                    <small class="text-muted">{{ porcentaje }}%</small>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Configuración común para gráficos
+        Chart.defaults.font.family = '"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+        Chart.defaults.color = '#6c757d';
+
+        // Gráfico de distribución de citas por estado
+        const citasEstadoCtx = document.getElementById('citasEstadoChart').getContext('2d');
+        const citasEstadoChart = new Chart(citasEstadoCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Pendientes', 'Confirmadas', 'Completadas', 'Canceladas'],
+                datasets: [{
+                    data: [
+                        {{ citas_pendientes }},
+                {{ citas_confirmadas }},
+                        {{ citas_completadas }},
+        {{ citas_canceladas }}
+                    ],
+        backgroundColor: [
+        '#ffc107',  // Amarillo (pendientes)
+        '#28a745',  // Verde (confirmadas)
+        '#17a2b8',  // Cyan (completadas)
+        '#dc3545'   // Rojo (canceladas)
+    ],
+        borderWidth: 1
+                }]
+            },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+        });
+
+    // Datos de ejemplo para gráfico de actividad mensual
+    // En un entorno real, estos datos vendrían del backend
+    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    const mesActual = new Date().getMonth();
+    const ultimosMeses = meses.slice(mesActual - 5, mesActual + 1);
+
+    // Gráfico de actividad mensual
+    const actividadMensualCtx = document.getElementById('actividadMensualChart').getContext('2d');
+    const actividadMensualChart = new Chart(actividadMensualCtx, {
+        type: 'bar',
+        data: {
+            labels: ultimosMeses,
+            datasets: [{
+                label: 'Citas',
+                data: [65, 78, 82, 95, 120, 105],
+                backgroundColor: 'rgba(25, 118, 210, 0.7)'
+            }, {
+                label: 'Nuevos usuarios',
+                data: [40, 45, 32, 55, 70, 60],
+                backgroundColor: 'rgba(46, 125, 50, 0.7)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Datos para nuevos usuarios por día
+    // En un entorno real, estos datos vendrían del backend
+    const fechasUsuarios = [];
+    const datosUsuarios = [];
+
+    {% for registro in nuevos_usuarios %}
+    fechasUsuarios.push('{{ registro.fecha|fecha_formato }}');
+    datosUsuarios.push({{ registro.cantidad }});
+    {% endfor %}
+
+    // Gráfico de nuevos usuarios por día
+    const nuevosUsuariosCtx = document.getElementById('nuevosUsuariosChart').getContext('2d');
+    const nuevosUsuariosChart = new Chart(nuevosUsuariosCtx, {
+        type: 'line',
+        data: {
+            labels: fechasUsuarios,
+            datasets: [{
+                label: 'Nuevos usuarios',
+                data: datosUsuarios,
+                borderColor: 'rgba(25, 118, 210, 1)',
+                backgroundColor: 'rgba(25, 118, 210, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            }
+        }
+    });
+
+    // Datos para citas por día
+    // En un entorno real, estos datos vendrían del backend
+    const fechasCitas = [];
+    const datosCitas = [];
+
+    {% for registro in citas_por_dia %}
+    fechasCitas.push('{{ registro.fecha|fecha_formato }}');
+    datosCitas.push({{ registro.cantidad }});
+    {% endfor %}
+
+    // Gráfico de citas por día
+    const citasPorDiaCtx = document.getElementById('citasPorDiaChart').getContext('2d');
+    const citasPorDiaChart = new Chart(citasPorDiaCtx, {
+        type: 'line',
+        data: {
+            labels: fechasCitas,
+            datasets: [{
+                label: 'Citas',
+                data: datosCitas,
+                borderColor: 'rgba(46, 125, 50, 1)',
+                backgroundColor: 'rgba(46, 125, 50, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            }
+        }
+    });
+
+    // Selector de rango de fechas
+    const dateRangeSelector = document.getElementById('date-range');
+
+    dateRangeSelector.addEventListener('change', function () {
+        // En un entorno real, aquí se haría una petición AJAX para obtener los nuevos datos
+        // según el rango de fechas seleccionado
+        console.log('Rango seleccionado:', this.value, 'días');
+
+        // Simulación de actualización de datos (en un entorno real esto vendría del servidor)
+        // actualizarGraficos(this.value);
+    });
+    });
+</script>
+{% endblock %}

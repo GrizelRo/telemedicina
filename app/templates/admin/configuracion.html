@@ -1,0 +1,1105 @@
+{% extends "base.html" %}
+
+{% block title %}Configuración del Sistema - {{ app_name }}{% endblock %}
+
+{% block styles %}
+<style>
+    .config-card {
+        margin-bottom: 20px;
+    }
+
+    .config-card .card-header {
+        font-weight: bold;
+    }
+
+    .config-section {
+        margin-bottom: 30px;
+    }
+
+    .form-label {
+        font-weight: 500;
+    }
+
+    .required-field::after {
+        content: " *";
+        color: red;
+    }
+
+    .badge-status {
+        font-size: 0.8rem;
+    }
+
+    .config-value {
+        padding: 8px;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        margin-top: 5px;
+        font-family: monospace;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('admin.inicio') }}">Inicio</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Configuración</li>
+            </ol>
+        </nav>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-cogs"></i> Configuración del Sistema
+                </h4>
+            </div>
+            <div class="card-body">
+                <ul class="nav nav-tabs" id="configTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general"
+                            type="button" role="tab" aria-controls="general" aria-selected="true">
+                            <i class="fas fa-sliders-h"></i> General
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="email-tab" data-bs-toggle="tab" data-bs-target="#email"
+                            type="button" role="tab" aria-controls="email" aria-selected="false">
+                            <i class="fas fa-envelope"></i> Correo Electrónico
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="seguridad-tab" data-bs-toggle="tab" data-bs-target="#seguridad"
+                            type="button" role="tab" aria-controls="seguridad" aria-selected="false">
+                            <i class="fas fa-shield-alt"></i> Seguridad
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="api-tab" data-bs-toggle="tab" data-bs-target="#api" type="button"
+                            role="tab" aria-controls="api" aria-selected="false">
+                            <i class="fas fa-code"></i> API
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="integraciones-tab" data-bs-toggle="tab"
+                            data-bs-target="#integraciones" type="button" role="tab" aria-controls="integraciones"
+                            aria-selected="false">
+                            <i class="fas fa-plug"></i> Integraciones
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="sistema-tab" data-bs-toggle="tab" data-bs-target="#sistema"
+                            type="button" role="tab" aria-controls="sistema" aria-selected="false">
+                            <i class="fas fa-server"></i> Sistema
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content mt-4" id="configTabContent">
+                    <!-- Configuración General -->
+                    <div class="tab-pane fade show active" id="general" role="tabpanel" aria-labelledby="general-tab">
+                        <div class="config-section">
+                            <h5><i class="fas fa-info-circle"></i> Información de la Plataforma</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <form method="POST" action="{{ url_for('admin.actualizar_config_general') }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                                        <div class="mb-3">
+                                            <label for="app_name" class="form-label required-field">Nombre de la
+                                                Plataforma</label>
+                                            <input type="text" class="form-control" id="app_name" name="app_name"
+                                                value="{{ app_name }}" required>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="app_description"
+                                                class="form-label required-field">Descripción</label>
+                                            <textarea class="form-control" id="app_description" name="app_description"
+                                                rows="3" required>{{ app_description }}</textarea>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="app_version" class="form-label">Versión</label>
+                                            <input type="text" class="form-control" id="app_version" name="app_version"
+                                                value="{{ app_version }}" readonly>
+                                        </div>
+
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save"></i> Guardar Cambios
+                                        </button>
+                                    </form>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <i class="fas fa-clock"></i> Configuración de Zona Horaria
+                                        </div>
+                                        <div class="card-body">
+                                            <form method="POST" action="{{ url_for('admin.actualizar_timezone') }}">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                                                <div class="mb-3">
+                                                    <label for="timezone" class="form-label required-field">Zona
+                                                        Horaria</label>
+                                                    <select class="form-select" id="timezone" name="timezone" required>
+                                                        <option value="America/Bogota" {% if timezone=='America/Bogota'
+                                                            %}selected{% endif %}>América/Bogotá</option>
+                                                        <option value="America/Lima" {% if timezone=='America/Lima'
+                                                            %}selected{% endif %}>América/Lima</option>
+                                                        <option value="America/Caracas" {% if
+                                                            timezone=='America/Caracas' %}selected{% endif %}>
+                                                            América/Caracas</option>
+                                                        <option value="America/Santiago" {% if
+                                                            timezone=='America/Santiago' %}selected{% endif %}>
+                                                            América/Santiago</option>
+                                                        <option value="America/Buenos_Aires" {% if
+                                                            timezone=='America/Buenos_Aires' %}selected{% endif %}>
+                                                            América/Buenos Aires</option>
+                                                        <option value="America/Asuncion" {% if
+                                                            timezone=='America/Asuncion' %}selected{% endif %}>
+                                                            América/Asunción</option>
+                                                        <option value="America/La_Paz" {% if timezone=='America/La_Paz'
+                                                            %}selected{% endif %}>América/La Paz</option>
+                                                        <option value="America/Mexico_City" {% if
+                                                            timezone=='America/Mexico_City' %}selected{% endif %}>
+                                                            América/Ciudad de México</option>
+                                                    </select>
+                                                </div>
+
+                                                <button type="submit" class="btn btn-primary">
+                                                    <i class="fas fa-save"></i> Actualizar
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="config-section">
+                            <h5><i class="fas fa-calendar-alt"></i> Configuración de Citas</h5>
+                            <form method="POST" action="{{ url_for('admin.actualizar_config_citas') }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="max_appointments_per_doctor" class="form-label">Máximo de Citas
+                                                por Médico por Día</label>
+                                            <input type="number" class="form-control" id="max_appointments_per_doctor"
+                                                name="max_appointments_per_doctor"
+                                                value="{{ max_appointments_per_doctor_day }}" min="1" max="50">
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="videoconference_timeout" class="form-label">Tiempo Máximo de
+                                                Videoconferencia (segundos)</label>
+                                            <input type="number" class="form-control" id="videoconference_timeout"
+                                                name="videoconference_timeout" value="{{ videoconference_timeout }}"
+                                                min="600" max="7200">
+                                            <div class="form-text">Valor recomendado: 3600 (1 hora)</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-12">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save"></i> Guardar Cambios
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Configuración de Correo Electrónico -->
+                    <div class="tab-pane fade" id="email" role="tabpanel" aria-labelledby="email-tab">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> La configuración de correo electrónico es esencial para
+                            enviar notificaciones, recordatorios y documentos a los usuarios.
+                        </div>
+
+                        <form method="POST" action="{{ url_for('admin.actualizar_config_email') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="mail_server" class="form-label required-field">Servidor SMTP</label>
+                                        <input type="text" class="form-control" id="mail_server" name="mail_server"
+                                            value="{{ mail_server }}" required>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="mail_port" class="form-label required-field">Puerto SMTP</label>
+                                        <input type="number" class="form-control" id="mail_port" name="mail_port"
+                                            value="{{ mail_port }}" required>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="mail_username" class="form-label required-field">Usuario
+                                            SMTP</label>
+                                        <input type="text" class="form-control" id="mail_username" name="mail_username"
+                                            value="{{ mail_username }}" required>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="mail_password" class="form-label required-field">Contraseña
+                                            SMTP</label>
+                                        <input type="password" class="form-control" id="mail_password"
+                                            name="mail_password" value="{{ mail_password }}" required>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="mail_default_sender" class="form-label required-field">Remitente
+                                            Predeterminado</label>
+                                        <input type="email" class="form-control" id="mail_default_sender"
+                                            name="mail_default_sender" value="{{ mail_default_sender }}" required>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="mail_use_tls"
+                                                name="mail_use_tls" {% if mail_use_tls %}checked{% endif %}>
+                                            <label class="form-check-label" for="mail_use_tls">Usar TLS</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="mail_async"
+                                                name="mail_async" {% if mail_async %}checked{% endif %}>
+                                            <label class="form-check-label" for="mail_async">Envío Asíncrono</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-12 mt-3">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> Guardar Configuración
+                                    </button>
+                                    <button type="button" class="btn btn-info" id="test-email-btn">
+                                        <i class="fas fa-paper-plane"></i> Enviar Correo de Prueba
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Configuración de Seguridad -->
+                    <div class="tab-pane fade" id="seguridad" role="tabpanel" aria-labelledby="seguridad-tab">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i> La modificación de estas configuraciones puede
+                            afectar la seguridad del sistema. Proceda con precaución.
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card config-card">
+                                    <div class="card-header">
+                                        <i class="fas fa-key"></i> Claves de Seguridad
+                                    </div>
+                                    <div class="card-body">
+                                        <form method="POST" action="{{ url_for('admin.regenerar_claves_seguridad') }}">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                                            <div class="mb-3">
+                                                <label class="form-label">SECRET_KEY</label>
+                                                <div class="config-value">{{ secret_key|truncate(20) }}...</div>
+                                                <div class="form-text">Se utiliza para firmar sesiones y tokens.</div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label">SECURITY_PASSWORD_SALT</label>
+                                                <div class="config-value">{{ security_password_salt|truncate(20) }}...
+                                                </div>
+                                                <div class="form-text">Se utiliza para reforzar la seguridad de tokens.
+                                                </div>
+                                            </div>
+
+                                            <button type="submit" class="btn btn-warning"
+                                                onclick="return confirm('¿Está seguro de que desea regenerar las claves de seguridad? Esto invalidará todas las sesiones y tokens activos.')">
+                                                <i class="fas fa-sync-alt"></i> Regenerar Claves
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="card config-card">
+                                    <div class="card-header">
+                                        <i class="fas fa-shield-alt"></i> Políticas de Seguridad
+                                    </div>
+                                    <div class="card-body">
+                                        <form method="POST"
+                                            action="{{ url_for('admin.actualizar_politicas_seguridad') }}">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                                            <div class="mb-3">
+                                                <label for="session_lifetime" class="form-label">Duración de Sesión
+                                                    (días)</label>
+                                                <input type="number" class="form-control" id="session_lifetime"
+                                                    name="session_lifetime" value="{{ session_lifetime_days }}" min="1"
+                                                    max="30">
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="force_https"
+                                                        name="force_https" {% if force_https %}checked{% endif %}>
+                                                    <label class="form-check-label" for="force_https">Forzar
+                                                        HTTPS</label>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="enable_2fa"
+                                                        name="enable_2fa" {% if enable_2fa %}checked{% endif %}>
+                                                    <label class="form-check-label" for="enable_2fa">Habilitar
+                                                        Autenticación de Dos Factores</label>
+                                                </div>
+                                                <div class="form-text">Para roles administrativos.</div>
+                                            </div>
+
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-save"></i> Guardar Cambios
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-3">
+                            <div class="col-md-12">
+                                <div class="card config-card">
+                                    <div class="card-header">
+                                        <i class="fas fa-lock"></i> Políticas de Contraseñas
+                                    </div>
+                                    <div class="card-body">
+                                        <form method="POST"
+                                            action="{{ url_for('admin.actualizar_politicas_password') }}">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                                            <div class="row">
+                                                <div class="col-md-3">
+                                                    <div class="mb-3">
+                                                        <label for="password_min_length" class="form-label">Longitud
+                                                            Mínima</label>
+                                                        <input type="number" class="form-control"
+                                                            id="password_min_length" name="password_min_length"
+                                                            value="{{ password_min_length }}" min="4" max="16">
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-3">
+                                                    <div class="mb-3">
+                                                        <div class="form-check form-switch">
+                                                            <input class="form-check-input" type="checkbox"
+                                                                id="password_require_uppercase"
+                                                                name="password_require_uppercase" {% if
+                                                                password_require_uppercase %}checked{% endif %}>
+                                                            <label class="form-check-label"
+                                                                for="password_require_uppercase">Requerir
+                                                                Mayúsculas</label>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="mb-3">
+                                                        <div class="form-check form-switch">
+                                                            <input class="form-check-input" type="checkbox"
+                                                                id="password_require_lowercase"
+                                                                name="password_require_lowercase" {% if
+                                                                password_require_lowercase %}checked{% endif %}>
+                                                            <label class="form-check-label"
+                                                                for="password_require_lowercase">Requerir
+                                                                Minúsculas</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-3">
+                                                    <div class="mb-3">
+                                                        <div class="form-check form-switch">
+                                                            <input class="form-check-input" type="checkbox"
+                                                                id="password_require_numbers"
+                                                                name="password_require_numbers" {% if
+                                                                password_require_numbers %}checked{% endif %}>
+                                                            <label class="form-check-label"
+                                                                for="password_require_numbers">Requerir Números</label>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="mb-3">
+                                                        <div class="form-check form-switch">
+                                                            <input class="form-check-input" type="checkbox"
+                                                                id="password_require_special"
+                                                                name="password_require_special" {% if
+                                                                password_require_special %}checked{% endif %}>
+                                                            <label class="form-check-label"
+                                                                for="password_require_special">Requerir Caracteres
+                                                                Especiales</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-3">
+                                                    <div class="mb-3">
+                                                        <label for="password_expiry_days" class="form-label">Caducidad
+                                                            (días)</label>
+                                                        <input type="number" class="form-control"
+                                                            id="password_expiry_days" name="password_expiry_days"
+                                                            value="{{ password_expiry_days }}" min="0" max="365">
+                                                        <div class="form-text">0 = Sin caducidad</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-save"></i> Guardar Políticas
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Configuración de API -->
+                    <div class="tab-pane fade" id="api" role="tabpanel" aria-labelledby="api-tab">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> Configuración para la API REST del sistema. Permite la
+                            integración con otros sistemas.
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <i class="fas fa-toggle-on"></i> Estado de la API
+                                    </div>
+                                    <div class="card-body">
+                                        <form method="POST" action="{{ url_for('admin.actualizar_config_api') }}">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                                            <div class="mb-3">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="api_enabled"
+                                                        name="api_enabled" {% if api_enabled %}checked{% endif %}>
+                                                    <label class="form-check-label" for="api_enabled">Habilitar
+                                                        API</label>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label for="api_rate_limit" class="form-label">Límite de Solicitudes
+                                                    (por minuto)</label>
+                                                <input type="number" class="form-control" id="api_rate_limit"
+                                                    name="api_rate_limit" value="{{ api_rate_limit }}" min="10"
+                                                    max="1000">
+                                            </div>
+
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-save"></i> Guardar Configuración
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <i class="fas fa-key"></i> Claves de API
+                                    </div>
+                                    <div class="card-body">
+                                        <p>Administre las claves de API para integración con sistemas externos.</p>
+
+                                        <a href="{{ url_for('admin.claves_api') }}" class="btn btn-primary">
+                                            <i class="fas fa-cog"></i> Administrar Claves
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-3">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <i class="fas fa-book"></i> Documentación de la API
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="api_docs_enabled"
+                                                    name="api_docs_enabled" {% if api_docs_enabled %}checked{% endif %}>
+                                                <label class="form-check-label" for="api_docs_enabled">Habilitar
+                                                    Documentación Pública</label>
+                                            </div>
+                                            <div class="form-text">Permite el acceso a la documentación de la API desde
+                                                la URL pública.</div>
+                                        </div>
+
+                                        <a href="{{ url_for('admin.actualizar_swagger') }}" class="btn btn-info">
+                                            <i class="fas fa-sync-alt"></i> Actualizar Documentación
+                                        </a>
+
+                                        <a href="/api/docs" class="btn btn-outline-primary" target="_blank">
+                                            <i class="fas fa-external-link-alt"></i> Ver Documentación
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Configuración de Integraciones -->
+                    <div class="tab-pane fade" id="integraciones" role="tabpanel" aria-labelledby="integraciones-tab">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> Configure integraciones con servicios externos para
+                            expandir las funcionalidades de la plataforma.
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <i class="fab fa-google"></i> Integración con Google Calendar
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="gcal_enabled"
+                                                    name="gcal_enabled" {% if gcal_enabled %}checked{% endif %}>
+                                                <label class="form-check-label" for="gcal_enabled">Habilitar
+                                                    Integración</label>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="gcal_client_id" class="form-label">Cliente ID</label>
+                                            <input type="text" class="form-control" id="gcal_client_id"
+                                                name="gcal_client_id" value="{{ gcal_client_id }}">
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="gcal_client_secret" class="form-label">Cliente Secret</label>
+                                            <input type="password" class="form-control" id="gcal_client_secret"
+                                                name="gcal_client_secret" value="{{ gcal_client_secret }}">
+                                        </div>
+
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save"></i> Guardar Configuración
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <i class="fab fa-whatsapp"></i> Notificaciones por WhatsApp
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="whatsapp_enabled"
+                                                    name="whatsapp_enabled" {% if whatsapp_enabled %}checked{% endif %}>
+                                                <label class="form-check-label" for="whatsapp_enabled">Habilitar
+                                                    Notificaciones</label>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="whatsapp_api_key" class="form-label">API Key</label>
+                                            <input type="password" class="form-control" id="whatsapp_api_key"
+                                                name="whatsapp_api_key" value="{{ whatsapp_api_key }}">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="whatsapp_api_key" class="form-label">API Key</label>
+                                            <input type="password" class="form-control" id="whatsapp_api_key" name="whatsapp_api_key"
+                                                value="{{ whatsapp_api_key }}">
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="whatsapp_number" class="form-label">Número de WhatsApp</label>
+                                            <input type="text" class="form-control" id="whatsapp_number" name="whatsapp_number" value="{{ whatsapp_number }}"
+                                                placeholder="Ej: +593912345678">
+                                        </div>
+                                        
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save"></i> Guardar Configuración
+                                        </button>
+                                        
+                                        <button type="button" class="btn btn-info" id="test-whatsapp-btn">
+                                            <i class="fas fa-paper-plane"></i> Enviar Mensaje de Prueba
+                                        </button>
+                                        </div>
+                                        </div>
+                                        </div>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="card mb-3">
+                                                    <div class="card-header">
+                                                        <i class="fas fa-sms"></i> Notificaciones SMS
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <div class="mb-3">
+                                                            <div class="form-check form-switch">
+                                                                <input class="form-check-input" type="checkbox" id="sms_enabled" name="sms_enabled" {% if
+                                                                    sms_enabled %}checked{% endif %}>
+                                                                <label class="form-check-label" for="sms_enabled">Habilitar Notificaciones SMS</label>
+                                                            </div>
+                                                        </div>
+                                        
+                                                        <div class="mb-3">
+                                                            <label for="sms_provider" class="form-label">Proveedor</label>
+                                                            <select class="form-select" id="sms_provider" name="sms_provider">
+                                                                <option value="twilio" {% if sms_provider=='twilio' %}selected{% endif %}>Twilio</option>
+                                                                <option value="aws_sns" {% if sms_provider=='aws_sns' %}selected{% endif %}>AWS SNS</option>
+                                                                <option value="custom" {% if sms_provider=='custom' %}selected{% endif %}>Personalizado</option>
+                                                            </select>
+                                                        </div>
+                                        
+                                                        <div class="mb-3">
+                                                            <label for="sms_api_key" class="form-label">API Key</label>
+                                                            <input type="password" class="form-control" id="sms_api_key" name="sms_api_key"
+                                                                value="{{ sms_api_key }}">
+                                                        </div>
+                                        
+                                                        <div class="mb-3">
+                                                            <label for="sms_api_secret" class="form-label">API Secret</label>
+                                                            <input type="password" class="form-control" id="sms_api_secret" name="sms_api_secret"
+                                                                value="{{ sms_api_secret }}">
+                                                        </div>
+                                        
+                                                        <button type="submit" class="btn btn-primary">
+                                                            <i class="fas fa-save"></i> Guardar Configuración
+                                                        </button>
+                                        
+                                                        <button type="button" class="btn btn-info" id="test-sms-btn">
+                                                            <i class="fas fa-paper-plane"></i> Enviar SMS de Prueba
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        
+                                            <div class="col-md-6">
+                                                <div class="card mb-3">
+                                                    <div class="card-header">
+                                                        <i class="fas fa-file-pdf"></i> Validación de Documentos
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <div class="mb-3">
+                                                            <label for="pdf_footer_text" class="form-label">Texto de Pie de Página de PDFs</label>
+                                                            <input type="text" class="form-control" id="pdf_footer_text" name="pdf_footer_text"
+                                                                value="{{ pdf_footer_text }}">
+                                                        </div>
+                                        
+                                                        <div class="mb-3">
+                                                            <div class="form-check form-switch">
+                                                                <input class="form-check-input" type="checkbox" id="enable_qr_validation"
+                                                                    name="enable_qr_validation" {% if enable_qr_validation %}checked{% endif %}>
+                                                                <label class="form-check-label" for="enable_qr_validation">Habilitar Códigos QR en
+                                                                    Documentos</label>
+                                                            </div>
+                                                        </div>
+                                        
+                                                        <div class="mb-3">
+                                                            <label for="document_validity_days" class="form-label">Validez de Documentos (días)</label>
+                                                            <input type="number" class="form-control" id="document_validity_days" name="document_validity_days"
+                                                                value="{{ document_validity_days }}" min="0" max="365">
+                                                            <div class="form-text">0 = Sin caducidad</div>
+                                                        </div>
+                                        
+                                                        <button type="submit" class="btn btn-primary">
+                                                            <i class="fas fa-save"></i> Guardar Configuración
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        </div>
+                                        
+                                        <!-- Configuración del Sistema -->
+                                        <div class="tab-pane fade" id="sistema" role="tabpanel" aria-labelledby="sistema-tab">
+                                            <div class="alert alert-warning">
+                                                <i class="fas fa-exclamation-triangle"></i> Estas configuraciones afectan directamente al funcionamiento del
+                                                sistema. Modifíquelas con precaución.
+                                            </div>
+                                        
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="card mb-3">
+                                                        <div class="card-header">
+                                                            <i class="fas fa-database"></i> Base de Datos
+                                                        </div>
+                                                        <div class="card-body">
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Tipo de Base de Datos</label>
+                                                                <div class="config-value">{{ database_type }}</div>
+                                                            </div>
+                                        
+                                                            <div class="mb-3">
+                                                                <label class="form-label">URI (Ofuscada)</label>
+                                                                <div class="config-value">{{ database_uri_masked }}</div>
+                                                            </div>
+                                        
+                                                            <div class="mb-3">
+                                                                <label for="db_pool_size" class="form-label">Tamaño del Pool de Conexiones</label>
+                                                                <input type="number" class="form-control" id="db_pool_size" name="db_pool_size"
+                                                                    value="{{ db_pool_size }}" min="5" max="100">
+                                                            </div>
+                                        
+                                                            <div class="alert alert-info">
+                                                                <i class="fas fa-info-circle"></i> La configuración completa de la base de datos se realiza a
+                                                                través de variables de entorno por seguridad.
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                        
+                                                    <div class="card mb-3">
+                                                        <div class="card-header">
+                                                            <i class="fas fa-hdd"></i> Almacenamiento
+                                                        </div>
+                                                        <div class="card-body">
+                                                            <div class="mb-3">
+                                                                <label for="upload_folder" class="form-label">Carpeta de Archivos</label>
+                                                                <input type="text" class="form-control" id="upload_folder" name="upload_folder"
+                                                                    value="{{ upload_folder }}" readonly>
+                                                            </div>
+                                        
+                                                            <div class="mb-3">
+                                                                <label for="max_content_length" class="form-label">Tamaño Máximo de Archivo (MB)</label>
+                                                                <input type="number" class="form-control" id="max_content_length" name="max_content_length"
+                                                                    value="{{ max_content_length }}" min="1" max="100">
+                                                            </div>
+                                        
+                                                            <button type="submit" class="btn btn-primary">
+                                                                <i class="fas fa-save"></i> Guardar Cambios
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                        
+                                                <div class="col-md-6">
+                                                    <div class="card mb-3">
+                                                        <div class="card-header">
+                                                            <i class="fas fa-lock"></i> Entorno y Modo de Ejecución
+                                                        </div>
+                                                        <div class="card-body">
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Modo Actual</label>
+                                                                <div class="config-value">
+                                                                    {% if debug_mode %}
+                                                                    <span class="badge bg-warning">Desarrollo</span>
+                                                                    {% else %}
+                                                                    <span class="badge bg-success">Producción</span>
+                                                                    {% endif %}
+                                                                </div>
+                                                            </div>
+                                        
+                                                            <div class="mb-3">
+                                                                <div class="form-check form-switch">
+                                                                    <input class="form-check-input" type="checkbox" id="debug_mode" name="debug_mode" {% if
+                                                                        debug_mode %}checked{% endif %}>
+                                                                    <label class="form-check-label" for="debug_mode">Modo Debug</label>
+                                                                </div>
+                                                                <div class="form-text text-danger">No habilitar en producción.</div>
+                                                            </div>
+                                        
+                                                            <div class="mb-3">
+                                                                <div class="form-check form-switch">
+                                                                    <input class="form-check-input" type="checkbox" id="auto_reload_templates"
+                                                                        name="auto_reload_templates" {% if auto_reload_templates %}checked{% endif %}>
+                                                                    <label class="form-check-label" for="auto_reload_templates">Recarga Automática de
+                                                                        Plantillas</label>
+                                                                </div>
+                                                            </div>
+                                        
+                                                            <button type="submit" class="btn btn-primary">
+                                                                <i class="fas fa-save"></i> Guardar Cambios
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                        
+                                                    <div class="card mb-3">
+                                                        <div class="card-header">
+                                                            <i class="fas fa-tasks"></i> Tareas Programadas
+                                                        </div>
+                                                        <div class="card-body">
+                                                            <div class="mb-3">
+                                                                <div class="form-check form-switch">
+                                                                    <input class="form-check-input" type="checkbox" id="enable_scheduler"
+                                                                        name="enable_scheduler" {% if enable_scheduler %}checked{% endif %}>
+                                                                    <label class="form-check-label" for="enable_scheduler">Habilitar Programador de
+                                                                        Tareas</label>
+                                                                </div>
+                                                            </div>
+                                        
+                                                            <div class="list-group mb-3">
+                                                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                                    Envío de Recordatorios
+                                                                    <span class="badge bg-success">Activo</span>
+                                                                </div>
+                                                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                                    Respaldo de Base de Datos
+                                                                    <span class="badge bg-success">Activo</span>
+                                                                </div>
+                                                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                                    Generación de Reportes
+                                                                    <span class="badge bg-secondary">Inactivo</span>
+                                                                </div>
+                                                            </div>
+                                        
+                                                            <a href="{{ url_for('admin.tareas_programadas') }}" class="btn btn-primary">
+                                                                <i class="fas fa-cog"></i> Configurar Tareas
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    <div class="card mb-3">
+                                                        <div class="card-header bg-danger text-white">
+                                                            <i class="fas fa-exclamation-triangle"></i> Operaciones Peligrosas
+                                                        </div>
+                                                        <div class="card-body">
+                                                            <div class="row">
+                                                                <div class="col-md-4">
+                                                                    <div class="d-grid">
+                                                                        <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal"
+                                                                            data-bs-target="#clearCacheModal">
+                                                                            <i class="fas fa-trash-alt"></i> Limpiar Caché
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <div class="d-grid">
+                                                                        <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal"
+                                                                            data-bs-target="#clearSessionsModal">
+                                                                            <i class="fas fa-sign-out-alt"></i> Invalidar Sesiones
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <div class="d-grid">
+                                                                        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal"
+                                                                            data-bs-target="#resetDatabaseModal">
+                                                                            <i class="fas fa-database"></i> Reiniciar Base de Datos
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        
+                                            <!-- Modal para confirmar limpieza de caché -->
+                                            <div class="modal fade" id="clearCacheModal" tabindex="-1" aria-labelledby="clearCacheModalLabel"
+                                                aria-hidden="true">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title" id="clearCacheModalLabel">Confirmar Limpieza de Caché</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <p>¿Está seguro de que desea limpiar la caché del sistema? Esta operación puede afectar
+                                                                temporalmente el rendimiento.</p>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                            <form action="{{ url_for('admin.limpiar_cache') }}" method="POST">
+                                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                                <button type="submit" class="btn btn-warning">Confirmar Limpieza</button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        
+                                            <!-- Modal para confirmar invalidación de sesiones -->
+                                            <div class="modal fade" id="clearSessionsModal" tabindex="-1" aria-labelledby="clearSessionsModalLabel"
+                                                aria-hidden="true">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title" id="clearSessionsModalLabel">Confirmar Invalidación de Sesiones</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <p>¿Está seguro de que desea invalidar todas las sesiones activas? Todos los usuarios deberán
+                                                                iniciar sesión nuevamente.</p>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                            <form action="{{ url_for('admin.invalidar_sesiones') }}" method="POST">
+                                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                                <button type="submit" class="btn btn-warning">Confirmar Invalidación</button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        
+                                            <!-- Modal para confirmar reinicio de base de datos -->
+                                            <div class="modal fade" id="resetDatabaseModal" tabindex="-1" aria-labelledby="resetDatabaseModalLabel"
+                                                aria-hidden="true">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title" id="resetDatabaseModalLabel">¡ADVERTENCIA! Reiniciar Base de Datos</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <div class="alert alert-danger">
+                                                                <i class="fas fa-exclamation-triangle"></i> Esta operación eliminará TODOS los datos y
+                                                                reiniciará la base de datos a su estado inicial. Esta acción NO se puede deshacer.
+                                                            </div>
+                                                            <p>Por favor, escriba "REINICIAR" en el campo de texto para confirmar:</p>
+                                                            <input type="text" class="form-control" id="resetConfirmation" placeholder="Escriba REINICIAR">
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                            <form action="{{ url_for('admin.reiniciar_base_datos') }}" method="POST">
+                                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                                <button type="submit" class="btn btn-danger" id="resetDatabaseBtn" disabled>Reiniciar Base de
+                                                                    Datos</button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        </div>
+                                        </div>
+                                        </div>
+                                        </div>
+                                        </div>
+                                        {% endblock %}
+                                        
+                                        {% block scripts %}
+                                        <script>
+                                            document.addEventListener('DOMContentLoaded', function () {
+                                                // Script para habilitar/deshabilitar botón de reinicio de base de datos
+                                                const resetConfirmation = document.getElementById('resetConfirmation');
+                                                const resetDatabaseBtn = document.getElementById('resetDatabaseBtn');
+
+                                                if (resetConfirmation && resetDatabaseBtn) {
+                                                    resetConfirmation.addEventListener('input', function () {
+                                                        resetDatabaseBtn.disabled = this.value !== 'REINICIAR';
+                                                    });
+                                                }
+
+                                                // Enviar correo electrónico de prueba
+                                                const testEmailBtn = document.getElementById('test-email-btn');
+                                                if (testEmailBtn) {
+                                                    testEmailBtn.addEventListener('click', function () {
+                                                        fetch('{{ url_for("admin.test_email") }}', {
+                                                            method: 'POST',
+                                                            headers: {
+                                                                'Content-Type': 'application/json',
+                                                                'X-CSRFToken': '{{ csrf_token() }}'
+                                                            }
+                                                        })
+                                                            .then(response => response.json())
+                                                            .then(data => {
+                                                                if (data.success) {
+                                                                    alert('Correo de prueba enviado correctamente. Por favor, verifique la bandeja de entrada.');
+                                                                } else {
+                                                                    alert('Error al enviar el correo de prueba: ' + data.message);
+                                                                }
+                                                            })
+                                                            .catch(error => {
+                                                                alert('Error al enviar el correo de prueba. Verifique la configuración.');
+                                                            });
+                                                    });
+                                                }
+
+                                                // Enviar SMS de prueba
+                                                const testSmsBtn = document.getElementById('test-sms-btn');
+                                                if (testSmsBtn) {
+                                                    testSmsBtn.addEventListener('click', function () {
+                                                        const phoneNumber = prompt('Ingrese un número de teléfono para enviar el SMS de prueba:', '+');
+                                                        if (phoneNumber) {
+                                                            fetch('{{ url_for("admin.test_sms") }}', {
+                                                                method: 'POST',
+                                                                headers: {
+                                                                    'Content-Type': 'application/json',
+                                                                    'X-CSRFToken': '{{ csrf_token() }}'
+                                                                },
+                                                                body: JSON.stringify({
+                                                                    phone_number: phoneNumber
+                                                                })
+                                                            })
+                                                                .then(response => response.json())
+                                                                .then(data => {
+                                                                    if (data.success) {
+                                                                        alert('SMS de prueba enviado correctamente al número ' + phoneNumber);
+                                                                    } else {
+                                                                        alert('Error al enviar el SMS de prueba: ' + data.message);
+                                                                    }
+                                                                })
+                                                                .catch(error => {
+                                                                    alert('Error al enviar el SMS de prueba. Verifique la configuración.');
+                                                                });
+                                                        }
+                                                    });
+                                                }
+
+                                                // Enviar WhatsApp de prueba
+                                                const testWhatsappBtn = document.getElementById('test-whatsapp-btn');
+                                                if (testWhatsappBtn) {
+                                                    testWhatsappBtn.addEventListener('click', function () {
+                                                        const phoneNumber = prompt('Ingrese un número de teléfono para enviar el mensaje de WhatsApp de prueba:', '+');
+                                                        if (phoneNumber) {
+                                                            fetch('{{ url_for("admin.test_whatsapp") }}', {
+                                                                method: 'POST',
+                                                                headers: {
+                                                                    'Content-Type': 'application/json',
+                                                                    'X-CSRFToken': '{{ csrf_token() }}'
+                                                                },
+                                                                body: JSON.stringify({
+                                                                    phone_number: phoneNumber
+                                                                })
+                                                            })
+                                                                .then(response => response.json())
+                                                                .then(data => {
+                                                                    if (data.success) {
+                                                                        alert('Mensaje de WhatsApp de prueba enviado correctamente al número ' + phoneNumber);
+                                                                    } else {
+                                                                        alert('Error al enviar el mensaje de WhatsApp de prueba: ' + data.message);
+                                                                    }
+                                                                })
+                                                                .catch(error => {
+                                                                    alert('Error al enviar el mensaje de WhatsApp de prueba. Verifique la configuración.');
+                                                                });
+                                                        }
+                                                    });
+                                                }
+                                            });
+                                        </script>
+                                        {% endblock %}

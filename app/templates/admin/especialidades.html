@@ -1,0 +1,376 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Especialidades - {{ app_name }}{% endblock %}
+
+{% block styles %}
+<style>
+    .speciality-card {
+        transition: all 0.3s ease;
+    }
+
+    .speciality-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .speciality-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background-color: #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 15px;
+    }
+
+    .speciality-icon i {
+        font-size: 30px;
+        color: var(--color-primary);
+    }
+
+    .modal-title {
+        display: flex;
+        align-items: center;
+    }
+
+    .modal-title i {
+        margin-right: 10px;
+        color: var(--color-primary);
+    }
+
+    .specialty-count {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background-color: var(--color-primary);
+        color: white;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('admin.inicio') }}">Inicio</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Especialidades</li>
+            </ol>
+        </nav>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="fas fa-stethoscope"></i> Gestión de Especialidades Médicas
+                </h4>
+                <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal"
+                    data-bs-target="#addSpecialityModal">
+                    <i class="fas fa-plus-circle"></i> Nueva Especialidad
+                </button>
+            </div>
+            <div class="card-body">
+                <!-- Vista de especialidades -->
+                {% if especialidades %}
+                <div class="row">
+                    {% for especialidad in especialidades %}
+                    <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
+                        <div class="card speciality-card h-100 shadow-sm">
+                            <div class="card-body text-center position-relative">
+                                {% set medicos_count = especialidad.medicos|length %}
+                                {% if medicos_count > 0 %}
+                                <div class="specialty-count">{{ medicos_count }}</div>
+                                {% endif %}
+
+                                <div class="speciality-icon">
+                                    <i class="fas fa-{{ especialidad.icono or 'stethoscope' }}"></i>
+                                </div>
+                                <h5 class="card-title">{{ especialidad.nombre }}</h5>
+                                {% if especialidad.descripcion %}
+                                <p class="card-text small">{{ especialidad.descripcion|truncate(100) }}</p>
+                                {% else %}
+                                <p class="card-text text-muted small">Sin descripción</p>
+                                {% endif %}
+
+                                <div class="d-flex justify-content-center mt-3">
+                                    <button type="button" class="btn btn-sm btn-outline-primary me-2"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#viewSpecialityModal{{ especialidad.id }}">
+                                        <i class="fas fa-eye"></i> Ver
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-warning me-2"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#editSpecialityModal{{ especialidad.id }}">
+                                        <i class="fas fa-edit"></i> Editar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal para ver detalles de la especialidad -->
+                    <div class="modal fade" id="viewSpecialityModal{{ especialidad.id }}" tabindex="-1"
+                        aria-labelledby="viewSpecialityModalLabel{{ especialidad.id }}" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="viewSpecialityModalLabel{{ especialidad.id }}">
+                                        <i class="fas fa-{{ especialidad.icono or 'stethoscope' }}"></i>
+                                        {{ especialidad.nombre }}
+                                    </h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="text-center mb-4">
+                                        <div class="speciality-icon" style="width: 80px; height: 80px;">
+                                            <i class="fas fa-{{ especialidad.icono or 'stethoscope' }}"
+                                                style="font-size: 40px;"></i>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <h6>Descripción:</h6>
+                                        <p>{{ especialidad.descripcion or 'No hay descripción disponible.' }}</p>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <h6>Médicos en esta especialidad:</h6>
+                                        {% if especialidad.medicos %}
+                                        <ul class="list-group">
+                                            {% for medico in especialidad.medicos %}
+                                            <li
+                                                class="list-group-item d-flex justify-content-between align-items-center">
+                                                Dr. {{ medico.usuario.nombre_completo }}
+                                                {% if medico.disponible and medico.usuario.activo %}
+                                                <span class="badge bg-success rounded-pill">Activo</span>
+                                                {% else %}
+                                                <span class="badge bg-danger rounded-pill">Inactivo</span>
+                                                {% endif %}
+                                            </li>
+                                            {% endfor %}
+                                        </ul>
+                                        {% else %}
+                                        <p class="text-muted">No hay médicos asignados a esta especialidad.</p>
+                                        {% endif %}
+                                    </div>
+
+                                    <div>
+                                        <h6>Centros médicos que ofrecen esta especialidad:</h6>
+                                        {% set centros_count = 0 %}
+                                        <ul class="list-group">
+                                            {% for centro in centros_medicos if centro.especialidades %}
+                                            {% for esp_centro in centro.especialidades %}
+                                            {% if esp_centro.especialidad_id == especialidad.id and
+                                            esp_centro.disponible %}
+                                            {% set centros_count = centros_count + 1 %}
+                                            <li class="list-group-item">{{ centro.nombre }}</li>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% endfor %}
+                                        </ul>
+                                        {% if centros_count == 0 %}
+                                        <p class="text-muted">No hay centros médicos que ofrezcan esta especialidad.</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary"
+                                        data-bs-dismiss="modal">Cerrar</button>
+                                    <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                                        data-bs-target="#editSpecialityModal{{ especialidad.id }}"
+                                        data-bs-dismiss="modal">
+                                        <i class="fas fa-edit"></i> Editar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal para editar especialidad -->
+                    <div class="modal fade" id="editSpecialityModal{{ especialidad.id }}" tabindex="-1"
+                        aria-labelledby="editSpecialityModalLabel{{ especialidad.id }}" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="editSpecialityModalLabel{{ especialidad.id }}">
+                                        <i class="fas fa-edit"></i> Editar Especialidad
+                                    </h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <form method="POST"
+                                        action="{{ url_for('admin.editar_especialidad', especialidad_id=especialidad.id) }}"
+                                        id="editSpecialityForm{{ especialidad.id }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                                        <div class="mb-3">
+                                            <label for="nombre{{ especialidad.id }}" class="form-label">Nombre</label>
+                                            <input type="text" class="form-control" id="nombre{{ especialidad.id }}"
+                                                name="nombre" value="{{ especialidad.nombre }}" required>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="descripcion{{ especialidad.id }}"
+                                                class="form-label">Descripción</label>
+                                            <textarea class="form-control" id="descripcion{{ especialidad.id }}"
+                                                name="descripcion"
+                                                rows="3">{{ especialidad.descripcion or '' }}</textarea>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="icono{{ especialidad.id }}" class="form-label">Ícono (Font
+                                                Awesome)</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">fa-</span>
+                                                <input type="text" class="form-control" id="icono{{ especialidad.id }}"
+                                                    name="icono" value="{{ especialidad.icono or 'stethoscope' }}">
+                                            </div>
+                                            <div class="form-text">Nombre del ícono de Font Awesome (sin el prefijo fa-)
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary"
+                                        data-bs-dismiss="modal">Cancelar</button>
+                                    <button type="submit" form="editSpecialityForm{{ especialidad.id }}"
+                                        class="btn btn-primary">Guardar
+                                        Cambios</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No hay especialidades médicas registradas.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para agregar especialidad -->
+<div class="modal fade" id="addSpecialityModal" tabindex="-1" aria-labelledby="addSpecialityModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addSpecialityModalLabel">
+                    <i class="fas fa-plus-circle"></i> Nueva Especialidad
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{{ url_for('admin.agregar_especialidad') }}" id="addSpecialityForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label">Nombre</label>
+                        <input type="text" class="form-control" id="nombre" name="nombre" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="descripcion" class="form-label">Descripción</label>
+                        <textarea class="form-control" id="descripcion" name="descripcion" rows="3"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="icono" class="form-label">Ícono (Font Awesome)</label>
+                        <div class="input-group">
+                            <span class="input-group-text">fa-</span>
+                            <input type="text" class="form-control" id="icono" name="icono" value="stethoscope">
+                        </div>
+                        <div class="form-text">Nombre del ícono de Font Awesome (sin el prefijo fa-)</div>
+                        <div class="mt-2">
+                            <p>Íconos sugeridos:</p>
+                            <button type="button" class="btn btn-sm btn-outline-secondary mb-1 icon-suggestion"
+                                data-icon="stethoscope">
+                                <i class="fas fa-stethoscope"></i> stethoscope
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary mb-1 icon-suggestion"
+                                data-icon="heartbeat">
+                                <i class="fas fa-heartbeat"></i> heartbeat
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary mb-1 icon-suggestion"
+                                data-icon="brain">
+                                <i class="fas fa-brain"></i> brain
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary mb-1 icon-suggestion"
+                                data-icon="eye">
+                                <i class="fas fa-eye"></i> eye
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary mb-1 icon-suggestion"
+                                data-icon="tooth">
+                                <i class="fas fa-tooth"></i> tooth
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary mb-1 icon-suggestion"
+                                data-icon="lungs">
+                                <i class="fas fa-lungs"></i> lungs
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary mb-1 icon-suggestion"
+                                data-icon="bone">
+                                <i class="fas fa-bone"></i> bone
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" form="addSpecialityForm" class="btn btn-primary">Guardar Especialidad</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Funcionalidad para sugerencias de íconos
+        const iconSuggestions = document.querySelectorAll('.icon-suggestion');
+        const iconInput = document.getElementById('icono');
+
+        iconSuggestions.forEach(button => {
+            button.addEventListener('click', function () {
+                const icon = this.dataset.icon;
+                iconInput.value = icon;
+            });
+        });
+
+        // Previsualización de íconos en formularios de edición
+        {% for especialidad in especialidades %}
+        const iconInput{{ especialidad.id }
+    } = document.getElementById('icono{{ especialidad.id }}');
+    if (iconInput{ { especialidad.id } }) {
+                                                    iconInput{ { especialidad.id } }.addEventListener('input', function () {
+        const iconPreview = document.querySelector('#editSpecialityModal{{ especialidad.id }} .modal-title i');
+        if (iconPreview) {
+            iconPreview.className = 'fas fa-' + this.value;
+        }
+    });
+    }
+    {% endfor %}
+
+    // Previsualización de ícono en formulario de creación
+    iconInput.addEventListener('input', function () {
+        const iconPreview = document.querySelector('#addSpecialityModal .modal-title i');
+        if (iconPreview) {
+            iconPreview.className = 'fas fa-' + this.value;
+        }
+    });
+                                            });
+</script>
+{% endblock %}

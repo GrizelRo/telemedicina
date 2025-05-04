@@ -28,7 +28,7 @@ class Config:
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB
     
     # Zona horaria
-    TIMEZONE = 'America/Bogota'
+    TIMEZONE = 'America/Asuncion'
     
     # Configuraciones específicas para videoconferencia
     VIDEOCONFERENCE_TIMEOUT = 3600  # 1 hora en segundos

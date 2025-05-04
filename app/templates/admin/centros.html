@@ -1,0 +1,563 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Centros Médicos - {{ app_name }}{% endblock %}
+
+{% block styles %}
+<style>
+    .filtros-container {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(25, 118, 210, 0.1);
+    }
+
+    .actions-column {
+        width: 120px;
+    }
+
+    .center-card {
+        transition: all 0.3s ease;
+    }
+
+    .center-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .status-dot {
+        height: 10px;
+        width: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 5px;
+    }
+
+    .status-active {
+        background-color: var(--color-confirmed);
+    }
+
+    .status-inactive {
+        background-color: var(--color-canceled);
+    }
+
+    .center-img {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background-color: #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 15px;
+    }
+
+    .center-img i {
+        font-size: 40px;
+        color: var(--color-primary);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('admin.inicio') }}">Inicio</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Centros Médicos</li>
+            </ol>
+        </nav>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="fas fa-hospital"></i> Gestión de Centros Médicos
+                </h4>
+                <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal"
+                    data-bs-target="#addCenterModal">
+                    <i class="fas fa-plus-circle"></i> Nuevo Centro Médico
+                </button>
+            </div>
+            <div class="card-body">
+                <!-- Filtros -->
+                <div class="filtros-container">
+                    <form method="GET" action="{{ url_for('admin.centros') }}" id="filtros-form">
+                        <div class="row">
+                            <div class="col-md-3 mb-2">
+                                <label for="estado" class="form-label">Estado</label>
+                                <select name="estado" id="estado" class="form-select">
+                                    <option value="todos" {% if estado_actual=='todos' %}selected{% endif %}>Todos los
+                                        estados</option>
+                                    <option value="activos" {% if estado_actual=='activos' %}selected{% endif %}>Activos
+                                    </option>
+                                    <option value="inactivos" {% if estado_actual=='inactivos' %}selected{% endif %}>
+                                        Inactivos</option>
+                                </select>
+                            </div>
+                            <div class="col-md-7 mb-2">
+                                <label for="busqueda" class="form-label">Búsqueda</label>
+                                <input type="text" class="form-control" id="busqueda" name="busqueda"
+                                    placeholder="Nombre, dirección, ciudad..." value="{{ busqueda }}">
+                            </div>
+                            <div class="col-md-2 mb-2 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-search"></i> Filtrar
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Vista de centros médicos -->
+                {% if centros %}
+                <div class="row">
+                    {% for centro in centros %}
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card center-card h-100 shadow-sm">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="flex-shrink-0">
+                                        <div class="center-img">
+                                            <i class="fas fa-hospital"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h5 class="card-title">{{ centro.nombre }}</h5>
+                                        <p class="card-text">
+                                            <i class="fas fa-map-marker-alt text-danger"></i> {{ centro.ciudad }}, {{
+                                            centro.departamento }}
+                                        </p>
+                                        <p class="card-text mb-0">
+                                            {% if centro.activo %}
+                                            <span class="status-dot status-active"></span> Activo
+                                            {% else %}
+                                            <span class="status-dot status-inactive"></span> Inactivo
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <p class="card-text small mb-1"><i class="fas fa-phone text-primary"></i> {{
+                                    centro.telefono }}</p>
+                                <p class="card-text small mb-1"><i class="fas fa-envelope text-primary"></i> {{
+                                    centro.email or '-' }}
+                                </p>
+                                <p class="card-text small"><i class="fas fa-map-signs text-primary"></i> {{
+                                    centro.direccion }}</p>
+
+                                <div class="d-flex justify-content-center mt-3">
+                                    <button type="button" class="btn btn-sm btn-outline-primary me-2"
+                                        data-bs-toggle="modal" data-bs-target="#centerDetailsModal{{ centro.id }}">
+                                        <i class="fas fa-eye"></i> Detalles
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-warning me-2"
+                                        data-bs-toggle="modal" data-bs-target="#centerEditModal{{ centro.id }}">
+                                        <i class="fas fa-edit"></i> Editar
+                                    </button>
+
+                                    {% if centro.activo %}
+                                    <form method="POST"
+                                        action="{{ url_for('admin.desactivar_centro', centro_id=centro.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-ban"></i> Desactivar
+                                        </button>
+                                    </form>
+                                    {% else %}
+                                    <form method="POST"
+                                        action="{{ url_for('admin.activar_centro', centro_id=centro.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-success">
+                                            <i class="fas fa-check"></i> Activar
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal de detalles del centro -->
+                    <div class="modal fade" id="centerDetailsModal{{ centro.id }}" tabindex="-1"
+                        aria-labelledby="centerDetailsModalLabel{{ centro.id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="centerDetailsModalLabel{{ centro.id }}">Detalles del
+                                        Centro Médico</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h6>Información General</h6>
+                                            <p><strong>Nombre:</strong> {{ centro.nombre }}</p>
+                                            <p><strong>Tipo:</strong> {{ centro.tipo }}</p>
+                                            <p><strong>Dirección:</strong> {{ centro.direccion }}</p>
+                                            <p><strong>Ciudad:</strong> {{ centro.ciudad }}</p>
+                                            <p><strong>Departamento:</strong> {{ centro.departamento }}</p>
+                                            <p><strong>Código Postal:</strong> {{ centro.codigo_postal or '-' }}</p>
+                                            <p><strong>Teléfono:</strong> {{ centro.telefono }}</p>
+                                            <p><strong>Email:</strong> {{ centro.email or '-' }}</p>
+                                            <p><strong>Sitio Web:</strong> {% if centro.sitio_web %}<a
+                                                    href="{{ centro.sitio_web }}" target="_blank">{{ centro.sitio_web
+                                                    }}</a>{% else %}-{% endif %}</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6>Información Adicional</h6>
+                                            <p><strong>Fecha de Registro:</strong> {{
+                                                centro.fecha_registro|fecha_formato }}</p>
+                                            <p><strong>Estado:</strong>
+                                                {% if centro.activo %}
+                                                <span class="badge bg-success">Activo</span>
+                                                {% else %}
+                                                <span class="badge bg-danger">Inactivo</span>
+                                                {% endif %}
+                                            </p>
+                                            <p><strong>Horario de Atención:</strong><br>
+                                                {{ centro.horario_atencion or 'No especificado' }}
+                                            </p>
+
+                                            <h6 class="mt-4">Ubicación</h6>
+                                            {% if centro.latitud and centro.longitud %}
+                                            <div id="map{{ centro.id }}" style="height: 200px;" class="border rounded">
+                                            </div>
+                                            {% else %}
+                                            <p class="text-muted">No hay coordenadas disponibles para mostrar el mapa.
+                                            </p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <div class="row mt-3">
+                                        <div class="col-md-6">
+                                            <h6>Especialidades Disponibles</h6>
+                                            {% if centro.especialidades %}
+                                            <ul class="list-group">
+                                                {% for esp_centro in centro.especialidades %}
+                                                <li
+                                                    class="list-group-item d-flex justify-content-between align-items-center">
+                                                    {{ esp_centro.especialidad.nombre }}
+                                                    {% if esp_centro.disponible %}
+                                                    <span class="badge bg-success">Disponible</span>
+                                                    {% else %}
+                                                    <span class="badge bg-danger">No disponible</span>
+                                                    {% endif %}
+                                                </li>
+                                                {% endfor %}
+                                            </ul>
+                                            {% else %}
+                                            <p class="text-muted">No hay especialidades registradas.</p>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6>Administradores del Centro</h6>
+                                            {% if centro.administradores %}
+                                            <ul class="list-group">
+                                                {% for admin in centro.administradores %}
+                                                <li class="list-group-item">
+                                                    {{ admin.usuario.nombre_completo }}
+                                                    <small class="text-muted d-block">{{ admin.cargo or 'Sin cargo
+                                                        específico'
+                                                        }}</small>
+                                                </li>
+                                                {% endfor %}
+                                            </ul>
+                                            {% else %}
+                                            <p class="text-muted">No hay administradores asignados.</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    {% if centro.descripcion %}
+                                    <div class="row mt-3">
+                                        <div class="col-12">
+                                            <h6>Descripción</h6>
+                                            <p>{{ centro.descripcion }}</p>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary"
+                                        data-bs-dismiss="modal">Cerrar</button>
+                                    <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                                        data-bs-target="#centerEditModal{{ centro.id }}" data-bs-dismiss="modal">
+                                        <i class="fas fa-edit"></i> Editar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal de edición de centro -->
+                    <div class="modal fade" id="centerEditModal{{ centro.id }}" tabindex="-1"
+                        aria-labelledby="centerEditModalLabel{{ centro.id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="centerEditModalLabel{{ centro.id }}">Editar Centro
+                                        Médico</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <form method="POST" action="#" id="editCenterForm{{ centro.id }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="centro_id" value="{{ centro.id }}">
+
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="nombre{{ centro.id }}" class="form-label">Nombre</label>
+                                                <input type="text" class="form-control" id="nombre{{ centro.id }}"
+                                                    name="nombre" value="{{ centro.nombre }}" required>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="tipo{{ centro.id }}" class="form-label">Tipo</label>
+                                                <select class="form-select" id="tipo{{ centro.id }}" name="tipo"
+                                                    required>
+                                                    <option value="Hospital" {% if centro.tipo=='Hospital' %}selected{%
+                                                        endif %}>
+                                                        Hospital</option>
+                                                    <option value="Clínica" {% if centro.tipo=='Clínica' %}selected{%
+                                                        endif %}>Clínica
+                                                    </option>
+                                                    <option value="Centro de Salud" {% if centro.tipo=='Centro de Salud'
+                                                        %}selected{% endif %}>Centro de Salud</option>
+                                                    <option value="Consultorio" {% if centro.tipo=='Consultorio'
+                                                        %}selected{% endif %}>
+                                                        Consultorio</option>
+                                                    <option value="Otro" {% if centro.tipo=='Otro' %}selected{% endif
+                                                        %}>Otro</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="direccion{{ centro.id }}" class="form-label">Dirección</label>
+                                            <input type="text" class="form-control" id="direccion{{ centro.id }}"
+                                                name="direccion" value="{{ centro.direccion }}" required>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="ciudad{{ centro.id }}" class="form-label">Ciudad</label>
+                                                <input type="text" class="form-control" id="ciudad{{ centro.id }}"
+                                                    name="ciudad" value="{{ centro.ciudad }}" required>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="departamento{{ centro.id }}"
+                                                    class="form-label">Departamento</label>
+                                                <input type="text" class="form-control" id="departamento{{ centro.id }}"
+                                                    name="departamento" value="{{ centro.departamento }}" required>
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="codigo_postal{{ centro.id }}" class="form-label">Código
+                                                    Postal</label>
+                                                <input type="text" class="form-control"
+                                                    id="codigo_postal{{ centro.id }}" name="codigo_postal"
+                                                    value="{{ centro.codigo_postal or '' }}">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="telefono{{ centro.id }}" class="form-label">Teléfono</label>
+                                                <input type="text" class="form-control" id="telefono{{ centro.id }}"
+                                                    name="telefono" value="{{ centro.telefono }}" required>
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="email{{ centro.id }}" class="form-label">Email</label>
+                                                <input type="email" class="form-control" id="email{{ centro.id }}"
+                                                    name="email" value="{{ centro.email or '' }}">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="sitio_web{{ centro.id }}" class="form-label">Sitio
+                                                    Web</label>
+                                                <input type="url" class="form-control" id="sitio_web{{ centro.id }}"
+                                                    name="sitio_web" value="{{ centro.sitio_web or '' }}">
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="latitud{{ centro.id }}" class="form-label">Latitud</label>
+                                                <input type="text" class="form-control" id="latitud{{ centro.id }}"
+                                                    name="latitud" value="{{ centro.latitud or '' }}">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="longitud{{ centro.id }}" class="form-label">Longitud</label>
+                                                <input type="text" class="form-control" id="longitud{{ centro.id }}"
+                                                    name="longitud" value="{{ centro.longitud or '' }}">
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="horario_atencion{{ centro.id }}" class="form-label">Horario de
+                                                Atención</label>
+                                            <textarea class="form-control" id="horario_atencion{{ centro.id }}"
+                                                name="horario_atencion"
+                                                rows="3">{{ centro.horario_atencion or '' }}</textarea>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="descripcion{{ centro.id }}"
+                                                class="form-label">Descripción</label>
+                                            <textarea class="form-control" id="descripcion{{ centro.id }}"
+                                                name="descripcion" rows="3">{{ centro.descripcion or '' }}</textarea>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="activo{{ centro.id }}" class="form-label">Estado</label>
+                                            <select class="form-select" id="activo{{ centro.id }}" name="activo">
+                                                <option value="1" {% if centro.activo %}selected{% endif %}>Activo
+                                                </option>
+                                                <option value="0" {% if not centro.activo %}selected{% endif %}>Inactivo
+                                                </option>
+                                            </select>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary"
+                                        data-bs-dismiss="modal">Cancelar</button>
+                                    <button type="submit" form="editCenterForm{{ centro.id }}"
+                                        class="btn btn-primary">Guardar
+                                        Cambios</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No se encontraron centros médicos que coincidan con los criterios
+                    de búsqueda.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para agregar nuevo centro médico -->
+<div class="modal fade" id="addCenterModal" tabindex="-1" aria-labelledby="addCenterModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addCenterModalLabel">Agregar Nuevo Centro Médico</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="#" id="addCenterForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="nombre" class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="nombre" name="nombre" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="tipo" class="form-label">Tipo</label>
+                            <select class="form-select" id="tipo" name="tipo" required>
+                                <option value="">Seleccione...</option>
+                                <option value="Hospital">Hospital</option>
+                                <option value="Clínica">Clínica</option>
+                                <option value="Centro de Salud">Centro de Salud</option>
+                                <option value="Consultorio">Consultorio</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="direccion" class="form-label">Dirección</label>
+                        <input type="text" class="form-control" id="direccion" name="direccion" required>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="ciudad" class="form-label">Ciudad</label>
+                            <input type="text" class="form-control" id="ciudad" name="ciudad" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="departamento" class="form-label">Departamento</label>
+                            <input type="text" class="form-control" id="departamento" name="departamento" required>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="codigo_postal" class="form-label">Código Postal</label>
+                            <input type="text" class="form-control" id="codigo_postal" name="codigo_postal">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="telefono" class="form-label">Teléfono</label>
+                            <input type="text" class="form-control" id="telefono" name="telefono" required>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="sitio_web" class="form-label">Sitio Web</label>
+                            <input type="url" class="form-control" id="sitio_web" name="sitio_web">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="horario_atencion" class="form-label">Horario de Atención</label>
+                        <textarea class="form-control" id="horario_atencion" name="horario_atencion"
+                            rows="3"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="descripcion" class="form-label">Descripción</label>
+                        <textarea class="form-control" id="descripcion" name="descripcion" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" form="addCenterForm" class="btn btn-primary">Guardar Centro Médico</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Enviar el formulario al cambiar los filtros
+    document.addEventListener('DOMContentLoaded', function () {
+        const filtrosForm = document.getElementById('filtros-form');
+        const filtroInputs = filtrosForm.querySelectorAll('select, input[type="text"]');
+
+        filtroInputs.forEach(input => {
+            input.addEventListener('change', function () {
+                filtrosForm.submit();
+            });
+        });
+
+        // Inicializar mapas si existen coordenadas
+        {% for centro in centros %}
+        {% if centro.latitud and centro.longitud %}
+        // Código para inicializar el mapa (requiere incluir una librería de mapas como Leaflet o Google Maps)
+        // Aquí se incluiría el código para mostrar el mapa con las coordenadas del centro
+        {% endif %}
+        {% endfor %}
+    });
+</script>
+{% endblock %}

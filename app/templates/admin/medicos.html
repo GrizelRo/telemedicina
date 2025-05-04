@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Médicos - {{ app_name }}{% endblock %}
+
+{% block styles %}
+<style>
+    .filtros-container {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(25, 118, 210, 0.1);
+    }
+
+    .actions-column {
+        width: 120px;
+    }
+
+    .doctor-card {
+        transition: all 0.3s ease;
+    }
+
+    .doctor-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .status-dot {
+        height: 10px;
+        width: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 5px;
+    }
+
+    .status-active {
+        background-color: var(--color-confirmed);
+    }
+
+    .status-inactive {
+        background-color: var(--color-canceled);
+    }
+
+    .status-pending {
+        background-color: var(--color-pending);
+    }
+
+    .profile-img {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background-color: #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 15px;
+    }
+
+    .profile-img i {
+        font-size: 40px;
+        color: var(--color-primary);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('admin.inicio') }}">Inicio</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Médicos</li>
+            </ol>
+        </nav>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-user-md"></i> Gestión de Médicos
+                </h4>
+            </div>
+            <div class="card-body">
+                <!-- Filtros -->
+                <div class="filtros-container">
+                    <form method="GET" action="{{ url_for('admin.medicos') }}" id="filtros-form">
+                        <div class="row">
+                            <div class="col-md-3 mb-2">
+                                <label for="especialidad_id" class="form-label">Especialidad</label>
+                                <select name="especialidad_id" id="especialidad_id" class="form-select">
+                                    <option value="">Todas las especialidades</option>
+                                    {% for especialidad in especialidades %}
+                                    <option value="{{ especialidad.id }}" {% if especialidad_actual==especialidad.id
+                                        %}selected{% endif %}>{{ especialidad.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label for="estado" class="form-label">Estado</label>
+                                <select name="estado" id="estado" class="form-select">
+                                    <option value="todos" {% if estado_actual=='todos' %}selected{% endif %}>Todos los
+                                        estados</option>
+                                    <option value="activos" {% if estado_actual=='activos' %}selected{% endif %}>Activos
+                                    </option>
+                                    <option value="inactivos" {% if estado_actual=='inactivos' %}selected{% endif %}>
+                                        Inactivos</option>
+                                    <option value="pendientes" {% if estado_actual=='pendientes' %}selected{% endif %}>
+                                        Pendientes de validación</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label for="busqueda" class="form-label">Búsqueda</label>
+                                <input type="text" class="form-control" id="busqueda" name="busqueda"
+                                    placeholder="Nombre, licencia, email..." value="{{ busqueda }}">
+                            </div>
+                            <div class="col-md-2 mb-2 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-search"></i> Filtrar
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Vista de médicos -->
+                {% if medicos %}
+                <div class="row">
+                    {% for medico in medicos %}
+                    <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
+                        <div class="card doctor-card h-100 shadow-sm">
+                            <div class="card-body text-center">
+                                <div class="profile-img">
+                                    <i class="fas fa-user-md"></i>
+                                </div>
+                                <h5 class="card-title">Dr. {{ medico.usuario.nombre_completo }}</h5>
+                                <p class="card-text">
+                                    <span class="badge bg-primary">{{ medico.especialidad.nombre }}</span>
+                                </p>
+                                <p class="card-text small">
+                                    <strong>Licencia:</strong> {{ medico.numero_licencia }}
+                                </p>
+                                <p class="card-text">
+                                    {% if medico.usuario.activo and medico.disponible %}
+                                    <span class="status-dot status-active"></span> Activo
+                                    {% elif not medico.usuario.activo %}
+                                    <span class="status-dot status-pending"></span> Pendiente de validación
+                                    {% else %}
+                                    <span class="status-dot status-inactive"></span> Inactivo
+                                    {% endif %}
+                                </p>
+
+                                <div class="d-flex justify-content-center mt-3">
+                                    <button type="button" class="btn btn-sm btn-outline-primary me-2"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#doctorDetailsModal{{ medico.usuario_id }}">
+                                        <i class="fas fa-eye"></i> Detalles
+                                    </button>
+
+                                    {% if not medico.usuario.activo %}
+                                    <form method="POST"
+                                        action="{{ url_for('admin.activar_medico', medico_id=medico.usuario_id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-success">
+                                            <i class="fas fa-check-circle"></i> Validar
+                                        </button>
+                                    </form>
+                                    {% elif medico.disponible %}
+                                    <form method="POST"
+                                        action="{{ url_for('admin.desactivar_medico', medico_id=medico.usuario_id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-ban"></i> Desactivar
+                                        </button>
+                                    </form>
+                                    {% else %}
+                                    <form method="POST"
+                                        action="{{ url_for('admin.activar_medico', medico_id=medico.usuario_id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-success">
+                                            <i class="fas fa-check"></i> Activar
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal de detalles del médico -->
+                    <div class="modal fade" id="doctorDetailsModal{{ medico.usuario_id }}" tabindex="-1"
+                        aria-labelledby="doctorDetailsModalLabel{{ medico.usuario_id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="doctorDetailsModalLabel{{ medico.usuario_id }}">Detalles
+                                        del Médico</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h6>Información Personal</h6>
+                                            <p><strong>Nombre:</strong> {{ medico.usuario.nombre_completo }}</p>
+                                            <p><strong>Documento:</strong> {{ medico.usuario.tipo_documento }}: {{
+                                                medico.usuario.numero_documento }}</p>
+                                            <p><strong>Género:</strong> {{ medico.usuario.genero|capitalize }}</p>
+                                            <p><strong>Fecha de Nacimiento:</strong> {{
+                                                medico.usuario.fecha_nacimiento|fecha_formato }}</p>
+                                            <p><strong>Email:</strong> {{ medico.usuario.email }}</p>
+                                            <p><strong>Teléfono:</strong> {{ medico.usuario.telefono or '-' }}</p>
+                                            <p><strong>Dirección:</strong> {{ medico.usuario.direccion or '-' }}</p>
+                                            <p><strong>Ciudad:</strong> {{ medico.usuario.ciudad or '-' }}</p>
+                                            <p><strong>Departamento:</strong> {{ medico.usuario.departamento or '-' }}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6>Información Profesional</h6>
+                                            <p><strong>Especialidad:</strong> {{ medico.especialidad.nombre }}</p>
+                                            <p><strong>Licencia:</strong> {{ medico.numero_licencia }}</p>
+                                            <p><strong>Título Profesional:</strong> {{ medico.titulo_profesional }}</p>
+                                            <p><strong>Años de Experiencia:</strong> {{ medico.anos_experiencia or '-'
+                                                }}</p>
+                                            <p><strong>Fecha de Registro:</strong> {{
+                                                medico.usuario.fecha_registro|fecha_formato }}</p>
+                                            <p><strong>Estado:</strong>
+                                                {% if medico.usuario.activo and medico.disponible %}
+                                                <span class="badge bg-success">Activo</span>
+                                                {% elif not medico.usuario.activo %}
+                                                <span class="badge bg-warning">Pendiente de validación</span>
+                                                {% else %}
+                                                <span class="badge bg-danger">Inactivo</span>
+                                                {% endif %}
+                                            </p>
+
+                                            <h6 class="mt-4">Centros Médicos</h6>
+                                            {% if medico.centros_medicos %}
+                                            <ul class="list-group">
+                                                {% for centro in medico.centros_medicos %}
+                                                <li class="list-group-item">{{ centro.nombre }}</li>
+                                                {% endfor %}
+                                            </ul>
+                                            {% else %}
+                                            <p class="text-muted">No está asignado a ningún centro médico.</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    {% if medico.biografia %}
+                                    <div class="row mt-3">
+                                        <div class="col-12">
+                                            <h6>Biografía</h6>
+                                            <p>{{ medico.biografia }}</p>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary"
+                                        data-bs-dismiss="modal">Cerrar</button>
+                                    {% if not medico.usuario.activo %}
+                                    <form method="POST"
+                                        action="{{ url_for('admin.activar_medico', medico_id=medico.usuario_id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-success">
+                                            <i class="fas fa-check-circle"></i> Validar Médico
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No se encontraron médicos que coincidan con los criterios de
+                    búsqueda.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Enviar el formulario al cambiar los filtros
+    document.addEventListener('DOMContentLoaded', function () {
+        const filtrosForm = document.getElementById('filtros-form');
+        const filtroInputs = filtrosForm.querySelectorAll('select, input[type="text"]');
+
+        filtroInputs.forEach(input => {
+            input.addEventListener('change', function () {
+                filtrosForm.submit();
+            });
+        });
+    });
+</script>
+{% endblock %}
